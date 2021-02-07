@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(Newtonsoft_Json)\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Common">
+      <HintPath>$(NuGet_Common)\NuGet.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Configuration">
+      <HintPath>$(NuGet_Configuration)\NuGet.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Frameworks">
+      <HintPath>$(NuGet_Frameworks)\NuGet.Frameworks.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Packaging">
+      <HintPath>$(NuGet_Packaging)\NuGet.Packaging.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Packaging.Core">
+      <HintPath>$(NuGet_Packaging_Core)\NuGet.Packaging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Protocol">
+      <HintPath>$(NuGet_Protocol)\NuGet.Protocol.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Resolver">
+      <HintPath>$(NuGet_Resolver)\NuGet.Resolver.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Versioning">
+      <HintPath>$(NuGet_Versioning)\NuGet.Versioning.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
