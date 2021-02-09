@@ -40,9 +40,15 @@ namespace NugetHelper
             {
                 FullPath = Path.Combine(FullPath, TargetFramework);
             }
-            EnvironmentVariableKey = EscapeStringAsEnvironmentVariableAsKey(Id);
+            EnvironmentVariableKeys = new List<string>();
+            EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Id));
+            EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Id));
+            EnvironmentVariableKeys.Add(GetFrameworkEnvironmentVariableKey(Id));
+
             //Alaways set the "default" key value
-            Environment.SetEnvironmentVariable(EnvironmentVariableKey, FullPath);
+            Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Id), FullPath);
+            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Id), Version.ToString());
+            Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Id), TargetFramework);
 
             if (!string.IsNullOrEmpty(var)) //If requested, set also the user specified value
             {
@@ -60,7 +66,7 @@ namespace NugetHelper
 
         public Uri Source { get; private set; }
 
-        public string EnvironmentVariableKey { get; private set; }
+        public List<string> EnvironmentVariableKeys { get; private set; }
 
         public string EnvironmentVariableAdditionalKey { get; private set; }
 
@@ -70,9 +76,19 @@ namespace NugetHelper
 
         public bool IsDontNetLib { get; private set; }
 
-        public static string EscapeStringAsEnvironmentVariableAsKey(string key)
+        public static string EscapeStringAsEnvironmentVariableAsKey(string id)
         {
-            return key.Replace(".", "_"); //.Replace("-", "_");
+            return id.Replace(".", "_"); //.Replace("-", "_");
+        }
+
+        public static string GetVersionEnvironmentVariableKey(string id)
+        {
+            return string.Format("{0}_version", EscapeStringAsEnvironmentVariableAsKey(id));
+        }
+
+        public static string GetFrameworkEnvironmentVariableKey(string id)
+        {
+            return string.Format("{0}_framework", EscapeStringAsEnvironmentVariableAsKey(id));
         }
 
         public override string ToString()
