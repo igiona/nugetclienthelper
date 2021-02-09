@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.IO;
+using System.Reflection;
 using NuGet.Frameworks;
 
 namespace NugetHelper
@@ -93,7 +94,29 @@ namespace NugetHelper
                 var required = string.Join(Environment.NewLine, highestFramework);
                 throw new Exception($"For the current package {spec.Id} multiple .NET frameworks would be necessary. This is probably caused by a mixture of '.NET Framework' and '.NET Core' based projects.\nThis is not supported.\nRequired frameworks: {required}");
             }
-            var highestFrameworkName = highestFramework.Single().Framework;
+            var highestFrameworkName = highestFramework.Single().GetShortFolderName(); ;
+
+            var packageVersion = spec.Version;
+
+            if (packageVersion == null)
+            {
+                var assemblies = spec.Files[highestFrameworkName].Where(x => x.EndsWith(".dll"));
+                if (assemblies.Count() == 0)
+                {
+                    throw new Exception("Error while loading the nuget information. No DLL found from which automatically retrieve the version information.");
+                }
+
+                var assemblyPath = assemblies.First();
+                if (File.Exists(assemblyPath))
+                {
+                    var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+                    packageVersion = assemblyName.Version;
+                }
+                else
+                {
+                    throw new Exception(string.Format("Unable to automatically retrieve the package version. Assembly {0} not found", assemblyPath));
+                }
+            }
 
             foreach (var frameworkItems in spec.Files)
             {
@@ -130,7 +153,7 @@ namespace NugetHelper
                 var lines = spec.AdditionalElements.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 customElements = string.Join($"{Environment.NewLine}    ", lines);
             }
-            var content = string.Format(_nuspecTemplate, spec.Id, spec.Version, customElements, dependencies);
+            var content = string.Format(_nuspecTemplate, spec.Id, packageVersion, customElements, dependencies);
             File.WriteAllText(Path.Combine(outDir, spec.FileName), content);
         }
     }
