@@ -106,6 +106,14 @@ namespace NugetHelper
             }
         }
 
+        private static void ThrowException(NugetPackage p, IEnumerable<NugetPackage> packages, string message)
+        {
+            var newPackages = new List<NugetPackage>();
+            newPackages.Add(p);
+            newPackages.AddRange(packages);
+            ThrowException(newPackages, message);
+        }
+
         private static void ThrowException(IEnumerable<NugetPackage> packages, string message)
         {
             throw new Exception(string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
@@ -124,7 +132,7 @@ namespace NugetHelper
 
                 if (filtered.Count() != 0)
                 {
-                    ThrowException(filtered, $"The packet with id {p.Id} is present in multiple version.");
+                    ThrowException(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
                 }
 
                 foreach(var d in p.Dependencies)
@@ -136,7 +144,7 @@ namespace NugetHelper
                     }
                     else if (dependecyFoundInList.Count() > 1)
                     {
-                        ThrowException(filtered, $"The dependency {d.ToString()} of the packet with id {p.Id} is present multiple times.");
+                        ThrowException(dependecyFoundInList, $"The dependency {d.ToString()} of the packet with id {p.Id} is present multiple times.");
                     }
                     else
                     {
