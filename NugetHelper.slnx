@@ -13,10 +13,7 @@
         </info>
     </nuget>   
     <env name="NUGET_ORG_URL">https://api.nuget.org/v3/index.json</env>
-
-    <package id="NUnit" version="3.13.1" targetFramework="" source="%NUGET_ORG_URL%" packable="false"/>
-    <package id="NUnit3TestAdapter" version="3.17.0" targetFramework="" source="%NUGET_ORG_URL%" packable="false"/>
-    
+        
     <package id="Newtonsoft.Json" version="9.0.1" targetFramework="netstandard1.0" source="%NUGET_ORG_URL%" />
     <package id="NuGet.Common" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
     <package id="NuGet.Configuration" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>TestLib1</id>
+    <version>1.0.0</version>
+    
+    <description>Test</description>
+    <authors>Test</authors>
+    <projectUrl>https://git.immo-electronics.ch/giona.imperatori/nugethelper</projectUrl>
+    <tags>test</tags>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+
+    <dependencies>
+     <group targetFramework="netstandard2.0">
+        <dependency id = "CoreLib" version="0.0.1" />
+     </group>
+
+    </dependencies>
+  </metadata>
+</package>
