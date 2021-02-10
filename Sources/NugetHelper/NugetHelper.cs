@@ -106,6 +106,50 @@ namespace NugetHelper
             }
         }
 
+        private static void ThrowException(IEnumerable<NugetPackage> packages, string message)
+        {
+            throw new Exception(string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
+        }
+
+        private static void ThrowException(IEnumerable<PackageDependency> packages, string message)
+        {
+            throw new Exception(string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
+        }
+
+        public static void CheckPackagesConsistency(IEnumerable<NugetPackage> packages)
+        {
+            foreach(var p in packages)
+            {
+                var filtered = packages.Where(x => x.Id == p.Id && x.Version != p.Version);
+
+                if (filtered.Count() != 0)
+                {
+                    ThrowException(filtered, $"The packet with id {p.Id} is present in multiple version.");
+                }
+
+                foreach(var d in p.Dependencies)
+                {
+                    var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
+                    if (dependecyFoundInList.Count() == 0)
+                    {
+                        ThrowException(new[] { d }, $"The dependency {d.ToString()} of the packet with id {p.Id} is not present.");
+                    }
+                    else if (dependecyFoundInList.Count() > 1)
+                    {
+                        ThrowException(filtered, $"The dependency {d.ToString()} of the packet with id {p.Id} is present multiple times.");
+                    }
+                    else
+                    {
+                        var dependencyCandidate = dependecyFoundInList.Single();
+                        if (!d.VersionRange.Satisfies(new NuGetVersion(dependencyCandidate.Version)))
+                        {
+                            ThrowException(dependecyFoundInList, $"The dependency {d.ToString()} of the packet with id {p.Id} is not present in a supported version.");
+                        }
+                    }
+                }
+            }
+        }
+
         public static IEnumerable<NugetPackage> InstallPackages(IEnumerable<NugetPackage> packages, bool autoInstallDependencis, Action<string> installedProgress)
         {
             var installed = new List<NugetPackage>();
