@@ -11,6 +11,7 @@ namespace NugetHelper
     {
         public NugetPackage(string id, string version, string targetFramework, string source, string var, bool isDontNetLib, string packagesRoot)
         {
+            Dependencies = new List<NuGet.Packaging.Core.PackageDependency>();
             Id = id;
             Version = new Version(System.Environment.ExpandEnvironmentVariables(version));
             if (!string.IsNullOrEmpty(targetFramework))
@@ -75,6 +76,8 @@ namespace NugetHelper
         public string FullPath { get; private set; }
 
         public bool IsDontNetLib { get; private set; }
+        
+        public List<NuGet.Packaging.Core.PackageDependency> Dependencies { get; private set; }
 
         public static string EscapeStringAsEnvironmentVariableAsKey(string id)
         {
@@ -91,9 +94,65 @@ namespace NugetHelper
             return string.Format("{0}_framework", EscapeStringAsEnvironmentVariableAsKey(id));
         }
 
+        public void AddDependencies(IEnumerable<NuGet.Packaging.Core.PackageDependency> dependencies)
+        {
+            Dependencies.AddRange(dependencies);
+        }
+
         public override string ToString()
         {
             return string.Format("{0} V{1}", Id, Version);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as NugetPackage);
+        }
+
+        public bool Equals(NugetPackage p)
+        {
+            // If parameter is null, return false.
+            if (Object.ReferenceEquals(p, null))
+            {
+                return false;
+            }
+
+            // Optimization for a common success case.
+            if (Object.ReferenceEquals(this, p))
+            {
+                return true;
+            }
+
+            // If run-time types are not exactly the same, return false.
+            if (this.GetType() != p.GetType())
+            {
+                return false;
+            }
+
+            return (Id == p.Id) && (Version == p.Version);
+        }
+
+        public static bool operator ==(NugetPackage lhs, NugetPackage rhs)
+        {
+            // Check for null on left side.
+            if (Object.ReferenceEquals(lhs, null))
+            {
+                if (Object.ReferenceEquals(rhs, null))
+                {
+                    // null == null = true.
+                    return true;
+                }
+
+                // Only the left side is null.
+                return false;
+            }
+            // Equals handles case of null on right side.
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(NugetPackage lhs, NugetPackage rhs)
+        {
+            return !(lhs == rhs);
         }
     }
 }

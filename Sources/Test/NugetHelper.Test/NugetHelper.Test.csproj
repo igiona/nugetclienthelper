@@ -1,19 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
   </PropertyGroup>
     
   <ItemGroup>
-    <ProjectReference Include="..\..\NugetHelper\NugetHelper.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>C:\Nugetcache\NUnit.3.13.1\lib\netstandard2.0\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="NUnit3.TestAdapter">
-      <HintPath>C:\Nugetcache\NUnit3TestAdapter.3.17.0\build\netcoreapp2.1\NUnit3.TestAdapter.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="$(NugetHelper)\NugetHelper.csproj" />
   </ItemGroup>
 
 </Project>
