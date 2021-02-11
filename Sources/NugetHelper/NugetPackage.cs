@@ -12,6 +12,7 @@ namespace NugetHelper
         public NugetPackage(string id, string version, string targetFramework, string source, string var, bool isDontNetLib, string packagesRoot)
         {
             Dependencies = new List<NuGet.Packaging.Core.PackageDependency>();
+            Libraries = new List<string>();
             Id = id;
             Version = new Version(System.Environment.ExpandEnvironmentVariables(version));
             if (!string.IsNullOrEmpty(targetFramework))
@@ -79,6 +80,8 @@ namespace NugetHelper
         
         public List<NuGet.Packaging.Core.PackageDependency> Dependencies { get; private set; }
 
+        public List<string> Libraries { get; private set; }
+
         public static string EscapeStringAsEnvironmentVariableAsKey(string id)
         {
             return id.Replace(".", "_"); //.Replace("-", "_");
@@ -97,6 +100,11 @@ namespace NugetHelper
         public void AddDependencies(IEnumerable<NuGet.Packaging.Core.PackageDependency> dependencies)
         {
             Dependencies.AddRange(dependencies);
+        }
+
+        public void AddLibraries(IEnumerable<string> libraries)
+        {
+            Libraries.AddRange(libraries);
         }
 
         public override string ToString()

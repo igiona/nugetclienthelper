@@ -123,6 +123,23 @@ namespace NugetHelper.Test
             NugetHelper.CheckPackagesConsistency(installed);
         }
 
+        [TestCase("Unity.Container", "5.11.10", "netstandard2.0", "https://api.nuget.org/v3/index.json", new[] { "{0}\\Unity.Container.dll", "{0}\\Unity.Container.pdb" })]
+        public void CheckPackageContent(string id, string version, string target, string source, string[] content)
+        {
+            var p = new NugetPackage(id, version, target, source, null, true, GetNugetCachePath());
+            var installed = NugetHelper.InstallPackages(new[] { p }, false, null);
+            Assert.AreEqual(installed.Count(), 1, "Invalid number of installed packages");
+
+            var installedPackage = installed.Single();
+            Assert.AreEqual(installedPackage.Libraries.Count, content.Length, "Invalid number of library files found in the packages");
+
+            foreach (var c in content)
+            {
+                Assert.IsTrue(installedPackage.Libraries.Contains(string.Format(c, installedPackage.FullPath)));
+            }
+        }
+
+
         [Test]
         public void ConsistencyCheck()
         {
@@ -139,43 +156,43 @@ namespace NugetHelper.Test
              * TestLib3 => CoreLib >= 1.0.0
              */
             packages.Clear();
-            packages.Add(new NugetPackage("TestLib1", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             NugetHelper.InstallPackages(packages, false, null);
             //Should assert due to the missing dependency package
             Assert.Throws<Exceptions.DependencyNotFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
-            packages.Add(new NugetPackage("TestLib1", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("CoreLib", "0.0.1", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("CoreLib", "0.0.2", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("CoreLib", "0.0.1", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("CoreLib", "0.0.2", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             NugetHelper.InstallPackages(packages, false, null);
-            //Should assert due to the different versions of the CoreLib package
+            //Should assert due to the different versions of the CoreLib checked as dependencies in the TestLib1 package
             Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
-            packages.Add(new NugetPackage("TestLib1", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             packages = NugetHelper.InstallPackages(packages, true, null).ToList();
             //Should assert due to the different versions of the CoreLib package
             Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
-            packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("CoreLib", "0.0.1", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("CoreLib", "0.0.1", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             NugetHelper.InstallPackages(packages, false, null);
             //Should assert due to the unsupprted version of the CoreLib package
-            Assert.Throws<Exceptions.InvalidDependencyFoundException> (() => NugetHelper.CheckPackagesConsistency(packages));
+            Assert.Throws<Exceptions.InvalidDependencyFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
-            packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
-            packages.Add(new NugetPackage("CoreLib", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
+            packages.Add(new NugetPackage("CoreLib", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             NugetHelper.InstallPackages(packages, false, null);
             //Although the Lib2 is build against the CoreLib;0.0.2 this test should pass.
             //This because Lib2 was built with version dependency CoreLib>=0.0.2
             NugetHelper.CheckPackagesConsistency(packages);
-            
+
             //With the flag set to true, this thest should now fail, because the exact min version 0.0.2 is missing
             Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundExceptio>(() => NugetHelper.CheckPackagesConsistency(packages, true));
         }
