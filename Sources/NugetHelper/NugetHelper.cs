@@ -132,7 +132,7 @@ namespace NugetHelper
 
                 if (filtered.Count() != 0)
                 {
-                    ThrowException<Exceptions.MultipleDependencyFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
+                    ThrowException<Exceptions.MultiplePackagesFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
                 }
 
                 foreach(var d in p.Dependencies)
@@ -144,7 +144,7 @@ namespace NugetHelper
                     }
                     else if (dependecyFoundInList.Count() > 1)
                     {
-                        ThrowException<Exceptions.MultipleDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
+                        ThrowException<Exceptions.MultipleDependenciesFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
                     }
                     else
                     {

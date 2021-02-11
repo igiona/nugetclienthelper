@@ -131,7 +131,7 @@ namespace NugetHelper.Test
             packages.Add(new NugetPackage("Package A", "1.0.0", "net5", "https://api.nuget.org/v3/index.json", null, true, GetNugetCachePath()));
             packages.Add(new NugetPackage("Package A", "2.0.0", "net5", "https://api.nuget.org/v3/index.json", null, true, GetNugetCachePath()));
 
-            Assert.Throws<Exceptions.MultipleDependencyFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
+            Assert.Throws<Exceptions.MultiplePackagesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             /*
              * TestLib1 => CoreLib >= 0.0.1
@@ -152,14 +152,14 @@ namespace NugetHelper.Test
             packages.Add(new NugetPackage("CoreLib", "0.0.2", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             NugetHelper.InstallPackages(packages, false, null);
             //Should assert due to the different versions of the CoreLib package
-            Assert.Throws<Exceptions.MultipleDependencyFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
+            Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
             packages.Add(new NugetPackage("TestLib1", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
             packages = NugetHelper.InstallPackages(packages, true, null).ToList();
             //Should assert due to the different versions of the CoreLib package
-            Assert.Throws<Exceptions.MultipleDependencyFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
+            Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
             packages.Clear();
             packages.Add(new NugetPackage("TestLib2", "1.0.0", "net5", GetLocalTestRepository(), null, true, GetNugetCachePath()));
