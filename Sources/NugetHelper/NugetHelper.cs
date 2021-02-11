@@ -172,15 +172,17 @@ namespace NugetHelper
             var installed = new List<NugetPackage>();
             foreach (var p in packages)
             {
-                if (!Directory.Exists(p.FullPath))
+                //Always go through the installation method, to gather the dependency information
+                InstallPackage(p, autoInstallDependencis, installed);
+                /*if (!Directory.Exists(p.FullPath))
                 {
                     InstallPackage(p, autoInstallDependencis, installed);
                 }
                 else
                 {
                     installed.Add(p);
-                }
-                
+                }*/
+
                 string extraMsg = "";
                 if (autoInstallDependencis)
                 {
@@ -319,6 +321,14 @@ namespace NugetHelper
 
                 newlyInstalled.AddDependencies(packageToInstall.Dependencies);
 
+                if (Directory.Exists(newlyInstalled.FullPath))
+                {
+                    newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
+                }
+                else
+                {
+                    throw new DirectoryNotFoundException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
+                }
                 installedPackages.Add(newlyInstalled);
             }
         }
