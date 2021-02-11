@@ -106,25 +106,25 @@ namespace NugetHelper
             }
         }
 
-        private static void ThrowException(NugetPackage p, IEnumerable<NugetPackage> packages, string message)
+        private static void ThrowException<T>(NugetPackage p, IEnumerable<NugetPackage> packages, string message) where T : Exception
         {
             var newPackages = new List<NugetPackage>();
             newPackages.Add(p);
             newPackages.AddRange(packages);
-            ThrowException(newPackages, message);
+            ThrowException<T>(newPackages, message);
         }
 
-        private static void ThrowException(IEnumerable<NugetPackage> packages, string message)
+        private static void ThrowException<T>(IEnumerable<NugetPackage> packages, string message) where T : Exception
         {
-            throw new Exception(string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
+            throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
         }
 
-        private static void ThrowException(IEnumerable<PackageDependency> packages, string message)
+        private static void ThrowException<T>(IEnumerable<PackageDependency> packages, string message) where T : Exception
         {
-            throw new Exception(string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
+            throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
         }
 
-        public static void CheckPackagesConsistency(IEnumerable<NugetPackage> packages)
+        public static void CheckPackagesConsistency(IEnumerable<NugetPackage> packages, bool forceMinMatch = false)
         {
             foreach(var p in packages)
             {
@@ -132,7 +132,7 @@ namespace NugetHelper
 
                 if (filtered.Count() != 0)
                 {
-                    ThrowException(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
+                    ThrowException<Exceptions.MultipleDependencyFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
                 }
 
                 foreach(var d in p.Dependencies)
@@ -140,18 +140,27 @@ namespace NugetHelper
                     var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
                     if (dependecyFoundInList.Count() == 0)
                     {
-                        ThrowException(new[] { d }, $"The dependency {d.ToString()} of the packet with id {p.Id} is not present.");
+                        ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
                     }
                     else if (dependecyFoundInList.Count() > 1)
                     {
-                        ThrowException(dependecyFoundInList, $"The dependency {d.ToString()} of the packet with id {p.Id} is present multiple times.");
+                        ThrowException<Exceptions.MultipleDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
                     }
                     else
                     {
                         var dependencyCandidate = dependecyFoundInList.Single();
+
                         if (!d.VersionRange.Satisfies(new NuGetVersion(dependencyCandidate.Version)))
                         {
-                            ThrowException(dependecyFoundInList, $"The dependency {d.ToString()} of the packet with id {p.Id} is not present in a supported version.");
+                            ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.Version}.");
+                        }
+                        else if (forceMinMatch)
+                        {
+                            var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+                            if (minVersionString != dependencyCandidate.Version.ToString())
+                            {
+                                ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.Version}.");
+                            }
                         }
                     }
                 }
