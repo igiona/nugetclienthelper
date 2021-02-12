@@ -92,14 +92,18 @@ namespace NugetHelper
             if (highestFramework.Count != 1)
             {
                 var required = string.Join(Environment.NewLine, highestFramework);
-                throw new Exception($"For the current package {spec.Id} multiple .NET frameworks would be necessary. This is probably caused by a mixture of '.NET Framework' and '.NET Core' based projects.\nThis is not supported.\nRequired frameworks: {required}");
+                throw new Exception($"For the required package {spec.Id} multiple .NET frameworks would be necessary. This is probably caused by a mixture of '.NET Framework' and '.NET Core' based projects.\nThis is not supported.\nRequired frameworks: {required}");
             }
-            var highestFrameworkName = highestFramework.Single().GetShortFolderName(); ;
+            var highestFrameworkName = highestFramework.Single().GetShortFolderName();
 
             var packageVersion = spec.Version;
 
             if (packageVersion == null)
             {
+                if (!spec.Files.ContainsKey(highestFrameworkName))
+                {
+                    throw new Exception($"The .NET version of the required package {spec.Id} has been resolved to {highestFrameworkName}. No file has been found under that framework.");
+                }
                 var assemblies = spec.Files[highestFrameworkName].Where(x => x.EndsWith(".dll"));
                 if (assemblies.Count() == 0)
                 {
