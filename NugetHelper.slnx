@@ -26,5 +26,5 @@
 
     <!-- Projects -->    
     <project name="NugetHelper" />
-    <project name="NugetHelper.Test" />
+    <project name="NugetHelper.Test" packable="false" />
 </SlnX>
