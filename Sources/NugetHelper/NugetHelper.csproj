@@ -1,37 +1,34 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json">
+    <Reference Include="Newtonsoft.Json" Condition="$(Newtonsoft_Json_debug) != 1">
       <HintPath>$(Newtonsoft_Json)\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Common">
+    <Reference Include="NuGet.Common" Condition="$(NuGet_Common_debug) != 1">
       <HintPath>$(NuGet_Common)\NuGet.Common.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Configuration">
+    <Reference Include="NuGet.Configuration" Condition="$(NuGet_Configuration_debug) != 1">
       <HintPath>$(NuGet_Configuration)\NuGet.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Frameworks">
+    <Reference Include="NuGet.Frameworks" Condition="$(NuGet_Frameworks_debug) != 1">
       <HintPath>$(NuGet_Frameworks)\NuGet.Frameworks.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Packaging">
+    <Reference Include="NuGet.Packaging" Condition="$(NuGet_Packaging_debug) != 1">
       <HintPath>$(NuGet_Packaging)\NuGet.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Packaging.Core">
+    <Reference Include="NuGet.Packaging.Core" Condition="$(NuGet_Packaging_Core_debug) != 1">
       <HintPath>$(NuGet_Packaging_Core)\NuGet.Packaging.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Protocol">
+    <Reference Include="NuGet.Protocol" Condition="$(NuGet_Protocol_debug) != 1">
       <HintPath>$(NuGet_Protocol)\NuGet.Protocol.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Resolver">
+    <Reference Include="NuGet.Resolver" Condition="$(NuGet_Resolver_debug) != 1">
       <HintPath>$(NuGet_Resolver)\NuGet.Resolver.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Versioning">
+    <Reference Include="NuGet.Versioning" Condition="$(NuGet_Versioning_debug) != 1">
       <HintPath>$(NuGet_Versioning)\NuGet.Versioning.dll</HintPath>
     </Reference>
   </ItemGroup>
-
 </Project>
