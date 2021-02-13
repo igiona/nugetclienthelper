@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<SlnX searchPath="%_slnx_%" packagesPath="C:\Nugetcache">
+<SlnX searchPath="$(slnx)\Sources" packagesPath="C:\Nugetcache">
     <nuget>
         <targetConfig>Debug</targetConfig>
         <readme>README.md</readme>

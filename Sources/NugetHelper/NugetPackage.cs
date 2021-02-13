@@ -92,6 +92,11 @@ namespace NugetHelper
             return string.Format("{0}_version", EscapeStringAsEnvironmentVariableAsKey(id));
         }
 
+        public static string GetDebugEnvironmentVariableKey(string id)
+        {
+            return string.Format("{0}_debug", EscapeStringAsEnvironmentVariableAsKey(id));
+        }
+
         public static string GetFrameworkEnvironmentVariableKey(string id)
         {
             return string.Format("{0}_framework", EscapeStringAsEnvironmentVariableAsKey(id));
