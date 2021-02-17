@@ -196,5 +196,17 @@ namespace NugetHelper.Test
             //With the flag set to true, this thest should now fail, because the exact min version 0.0.2 is missing
             Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundExceptio>(() => NugetHelper.CheckPackagesConsistency(packages, true));
         }
+
+        [TestCase("Newtonsoft.Json", "9.0.1", "netstandard1.0")]
+        [TestCase("Newtonsoft.Json", "12.0.3", "netstandard2.0")]
+        public void SystemPackagesChecks(string id, string version, string framework)
+        {
+            var packages = new List<NugetPackage>();
+
+            packages.Add(new NugetPackage(id, version, framework, "https://api.nuget.org/v3/index.json", null, true, GetNugetCachePath()));
+            NugetHelper.InstallPackages(packages, true, null);
+            //Should assert due to the missing dependency package
+            NugetHelper.CheckPackagesConsistency(packages);
+        }
     }
 }

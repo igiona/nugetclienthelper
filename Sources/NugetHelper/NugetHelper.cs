@@ -140,7 +140,16 @@ namespace NugetHelper
                     var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
                     if (dependecyFoundInList.Count() == 0)
                     {
-                        ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
+                        //For now, allow dependencies starting with Microsoft. and System. 
+                        //to have a non-match in the framework. The dependecy is probably coming from the
+                        //nuget package is probably delivered with .Net framework itself
+                        //Newtonsoft.Json 9.0.1 -> .netstandard1.0 references Microsoft.CSharp 4.01 -> netstandard1.3
+                        //.... !
+                        if (!d.Id.StartsWith("Microsoft.") &&
+                            !d.Id.StartsWith("System."))
+                        {
+                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
+                        }
                     }
                     else if (dependecyFoundInList.Count() > 1)
                     {
@@ -313,28 +322,45 @@ namespace NugetHelper
                     var libFrameworks = libItems.Select(x => x.TargetFramework);
 
                     var nearest = frameworkReducer.GetNearest(nuGetFramework, libFrameworks);
-                    
+
                     if (nearest == null)
                     {
-                        throw new NullReferenceException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency available frameworks: {string.Join("\n", libFrameworks)}.");
+                        newlyInstalled = null;
+
+                        //For now, allow dependencies starting with Microsoft. and System. 
+                        //to have a non-match in the framework. The dependecy is probably coming from the
+                        //nuget package is probably delivered with .Net framework itself
+                        //Newtonsoft.Json 9.0.1 -> .netstandard1.0 references Microsoft.CSharp 4.01 -> netstandard1.3
+                        //.... !
+                        if (!packageToInstall.Id.StartsWith("Microsoft.") &&
+                            !packageToInstall.Id.StartsWith("System."))
+                        {
+
+                            throw new NullReferenceException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency available frameworks: {string.Join("\n", libFrameworks)}.");
+                        }
                     }
-                    newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToString(),
+                    else
+                    {
+                        newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToString(),
                                         nearest.GetShortFolderName(),
                                         packageToInstall.Source.PackageSource.Source,
                                         null, true, requestedPackage.RootPath);
+                    }
                 }
-
-                newlyInstalled.AddDependencies(packageToInstall.Dependencies);
-
-                if (Directory.Exists(newlyInstalled.FullPath))
+                if (newlyInstalled != null)
                 {
-                    newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
+                    newlyInstalled.AddDependencies(packageToInstall.Dependencies);
+
+                    if (Directory.Exists(newlyInstalled.FullPath))
+                    {
+                        newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
+                    }
+                    else
+                    {
+                        throw new DirectoryNotFoundException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
+                    }
+                    installedPackages.Add(newlyInstalled);
                 }
-                else
-                {
-                    throw new DirectoryNotFoundException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
-                }
-                installedPackages.Add(newlyInstalled);
             }
         }
 
