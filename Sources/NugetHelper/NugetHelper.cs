@@ -258,7 +258,7 @@ namespace NugetHelper
         /// <param name="requestedPackage"></param>
         /// <param name="installedPackages"></param>
         /// <returns></returns>
-        private static async void InstallPackageActionAsync(NugetPackage requestedPackage,
+        private static async Task InstallPackageActionAsync(NugetPackage requestedPackage,
                                                             SourcePackageDependencyInfo packageToInstall,
                                                             ISettings settings,
                                                             SourceCacheContext cacheContext,
@@ -275,7 +275,7 @@ namespace NugetHelper
             var packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, logger), logger);
             
             //Check if the package was previousely installed in this session
-            if (installedPackages.Where((x) => x.Id == packageToInstall.Id && x.Version.ToString() == packageToInstall.Version.ToFullString()).FirstOrDefault() == null)
+            if (installedPackages.Where((x) => x.Id == packageToInstall.Id && x.Version.ToString() == packageToInstall.Version.ToString()).FirstOrDefault() == null)
             {
                 PackageReaderBase packageReader;
                 //Check if the package is already installed in the file system
@@ -318,7 +318,7 @@ namespace NugetHelper
                     {
                         throw new NullReferenceException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency available frameworks: {string.Join("\n", libFrameworks)}.");
                     }
-                    newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToFullString(),
+                    newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToString(),
                                         nearest.GetShortFolderName(),
                                         packageToInstall.Source.PackageSource.Source,
                                         null, true, requestedPackage.RootPath);
@@ -338,7 +338,7 @@ namespace NugetHelper
             }
         }
 
-        private static async void DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, ILogger logger, string destinationDirectory)
+        private static async Task DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, ILogger logger, string destinationDirectory)
         {
             string packagePath = Path.Combine(destinationDirectory, packageToInstall.ToString());
             if (!File.Exists(packagePath))
@@ -362,7 +362,7 @@ namespace NugetHelper
         /// <param name="requestedPackage"></param>
         /// <param name="autoInstallDependencis"></param>
         /// <returns></returns>
-        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, Action<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, ILogger> action)
+        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, ILogger, Task> action)
         {
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -415,7 +415,7 @@ namespace NugetHelper
 
                 foreach (var packageToInstall in packagesToInstall)
                 {
-                    action(requestedPackage, packageToInstall, settings, cacheContext, logger);
+                    await action(requestedPackage, packageToInstall, settings, cacheContext, logger);
                 }
             }
         }
