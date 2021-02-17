@@ -266,7 +266,9 @@ namespace NugetHelper
                                                             List<NugetPackage> installedPackages)
         {
             var packetRoot = Path.GetFullPath(requestedPackage.RootPath);
+            //var packagePathResolver = new PackagePathResolver(Path.Combine(packetRoot, packageToInstall.Id, packageToInstall.Version.ToFullString()), true);
             var packagePathResolver = new PackagePathResolver(packetRoot);
+
             var frameworkReducer = new FrameworkReducer();
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
 
@@ -308,10 +310,13 @@ namespace NugetHelper
                 if (requestedPackage.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
                 {
                     var libItems = packageReader.GetLibItems();
-                    var nearest = frameworkReducer.GetNearest(nuGetFramework, libItems.Select(x => x.TargetFramework));
+                    var libFrameworks = libItems.Select(x => x.TargetFramework);
+
+                    var nearest = frameworkReducer.GetNearest(nuGetFramework, libFrameworks);
+                    
                     if (nearest == null)
                     {
-                        throw new NullReferenceException(string.Format("The current package {0} was installed as dependecy of {1}. The parent package framework is unknown/invalid for the dependency. Ensure to explicitly install the dependency before the current parent package."));
+                        throw new NullReferenceException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency available frameworks: {string.Join("\n", libFrameworks)}.");
                     }
                     newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToFullString(),
                                         nearest.GetShortFolderName(),
