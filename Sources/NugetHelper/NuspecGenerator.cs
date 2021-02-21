@@ -114,7 +114,7 @@ namespace NugetHelper
                 if (File.Exists(assemblyPath))
                 {
                     var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
-                    packageVersion = assemblyName.Version;
+                    packageVersion = assemblyName.Version.ToString(3);
                 }
                 else
                 {
@@ -144,7 +144,7 @@ namespace NugetHelper
             dependencies.AppendLine();
             foreach (var d in spec.Dependecies)
             {
-                dependencies.AppendFormat(string.Format(_dependencyTemplate, d.Id, d.Version));
+                dependencies.AppendFormat(string.Format(_dependencyTemplate, d.Id, d.VersionRange.OriginalString));
                 dependencies.AppendLine();
             }
             dependencies.Append(_dependencyGroupClosing);

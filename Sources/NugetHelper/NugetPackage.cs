@@ -9,12 +9,17 @@ namespace NugetHelper
 {
     public class NugetPackage
     {
-        public NugetPackage(string id, string version, string targetFramework, string source, string var, bool isDontNetLib, string packagesRoot)
+        public const string DotNetCompileTimeAssemblyPath = "ref";
+
+        public const string DotNetImplementationAssemblyPath = "lib";
+
+        public NugetPackage(string id, string version, string targetFramework, string source, string var, NugetPackageType packageType, string packagesRoot)
         {
             Dependencies = new List<NuGet.Packaging.Core.PackageDependency>();
             Libraries = new List<string>();
             Id = id;
-            Version = new Version(System.Environment.ExpandEnvironmentVariables(version));
+            VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
+            MinVersion = VersionRange.ToNonSnapshotRange().MinVersion.ToString();
             if (!string.IsNullOrEmpty(targetFramework))
             {
                 TargetFramework = System.Environment.ExpandEnvironmentVariables(targetFramework);
@@ -26,21 +31,37 @@ namespace NugetHelper
 
             if (string.IsNullOrEmpty(source))
             {
-                throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, Version));
+                throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, MinVersion));
             }
             Source = new Uri(System.Environment.ExpandEnvironmentVariables(source));
             
             RootPath = packagesRoot;
-            FullPath = Path.Combine(RootPath, string.Format("{0}.{1}", Id, Version));
-            IsDontNetLib = isDontNetLib;
+            var basePath = Path.Combine(RootPath, string.Format("{0}.{1}", Id, MinVersion));
+            PackageType = packageType;
 
-            if (IsDontNetLib)
+            if (PackageType == NugetPackageType.DotNetImplementationAssembly)
             {
-                FullPath = Path.Combine(FullPath, "lib");
+                if (string.IsNullOrEmpty(TargetFramework))
+                {
+                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
+                }
+                FullPath = Path.Combine(basePath, DotNetImplementationAssemblyPath, TargetFramework);
             }
-            if (!string.IsNullOrEmpty(TargetFramework))
+            else if (PackageType == NugetPackageType.DotNetCompileTimeAssembly)
             {
-                FullPath = Path.Combine(FullPath, TargetFramework);
+                if (string.IsNullOrEmpty(TargetFramework))
+                {
+                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
+                }
+                FullPath = Path.Combine(basePath, DotNetCompileTimeAssemblyPath, TargetFramework);
+            }
+            else
+            {
+                FullPath = basePath;
+                if (!string.IsNullOrEmpty(TargetFramework))
+                {
+                    FullPath = Path.Combine(FullPath, TargetFramework);
+                }
             }
             EnvironmentVariableKeys = new List<string>();
             EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Id));
@@ -49,7 +70,7 @@ namespace NugetHelper
 
             //Alaways set the "default" key value
             Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Id), FullPath);
-            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Id), Version.ToString());
+            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Id), MinVersion);
             Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Id), TargetFramework);
 
             if (!string.IsNullOrEmpty(var)) //If requested, set also the user specified value
@@ -62,9 +83,13 @@ namespace NugetHelper
 
         public string Id { get; private set; }
 
-        public Version Version { get; private set; }
+        public string MinVersion { get; private set; }
+
+        public NuGet.Versioning.VersionRange VersionRange { get; private set; }
 
         public string TargetFramework { get; private set; }
+
+        public bool CompileTimeTarget { get; private set; }
 
         public Uri Source { get; private set; }
 
@@ -76,7 +101,7 @@ namespace NugetHelper
 
         public string FullPath { get; private set; }
 
-        public bool IsDontNetLib { get; private set; }
+        public NugetPackageType PackageType { get; private set; }
         
         public List<NuGet.Packaging.Core.PackageDependency> Dependencies { get; private set; }
 
@@ -114,7 +139,7 @@ namespace NugetHelper
 
         public override string ToString()
         {
-            return string.Format("{0} V{1}", Id, Version);
+            return string.Format("{0} V{1}", Id, MinVersion);
         }
 
         public override bool Equals(object obj)
@@ -142,7 +167,7 @@ namespace NugetHelper
                 return false;
             }
 
-            return (Id == p.Id) && (Version == p.Version);
+            return (Id == p.Id) && (MinVersion == p.MinVersion);
         }
 
         public static bool operator ==(NugetPackage lhs, NugetPackage rhs)
