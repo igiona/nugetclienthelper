@@ -77,7 +77,7 @@ namespace NugetHelper
 
             public void LogMinimal(string data)
             {
-                System.Diagnostics.Debug.WriteLine(data, "MINIMAL");                
+                System.Diagnostics.Debug.WriteLine(data, "MINIMAL");
             }
 
             public void LogWarning(string data)
@@ -124,32 +124,23 @@ namespace NugetHelper
             throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
         }
 
-        public static void CheckPackagesConsistency(IEnumerable<NugetPackage> packages, bool forceMinMatch = false)
+        public static void CheckPackagesConsistency(IReadOnlyList<NugetPackage> packages, bool forceMinMatch = false)
         {
-            foreach(var p in packages)
+            foreach (var p in packages)
             {
-                var filtered = packages.Where(x => x.Id == p.Id && x.Version != p.Version);
+                var filtered = packages.Where(x => x.Id == p.Id && x.MinVersion != p.MinVersion);
 
                 if (filtered.Count() != 0)
                 {
                     ThrowException<Exceptions.MultiplePackagesFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
                 }
 
-                foreach(var d in p.Dependencies)
+                foreach (var d in p.Dependencies)
                 {
                     var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
                     if (dependecyFoundInList.Count() == 0)
                     {
-                        //For now, allow dependencies starting with Microsoft. and System. 
-                        //to have a non-match in the framework. The dependecy is probably coming from the
-                        //nuget package is probably delivered with .Net framework itself
-                        //Newtonsoft.Json 9.0.1 -> .netstandard1.0 references Microsoft.CSharp 4.01 -> netstandard1.3
-                        //.... !
-                        if (!d.Id.StartsWith("Microsoft.") &&
-                            !d.Id.StartsWith("System."))
-                        {
-                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
-                        }
+                        ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
                     }
                     else if (dependecyFoundInList.Count() > 1)
                     {
@@ -159,16 +150,16 @@ namespace NugetHelper
                     {
                         var dependencyCandidate = dependecyFoundInList.Single();
 
-                        if (!d.VersionRange.Satisfies(new NuGetVersion(dependencyCandidate.Version)))
+                        if (!d.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
                         {
-                            ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.Version}.");
+                            ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
                         }
                         else if (forceMinMatch)
                         {
                             var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
-                            if (minVersionString != dependencyCandidate.Version.ToString())
+                            if (minVersionString != dependencyCandidate.MinVersion)
                             {
-                                ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.Version}.");
+                                ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
                             }
                         }
                     }
@@ -176,28 +167,20 @@ namespace NugetHelper
             }
         }
 
-        public static IEnumerable<NugetPackage> InstallPackages(IEnumerable<NugetPackage> packages, bool autoInstallDependencis, Action<string> installedProgress)
+        public static IEnumerable<NugetPackage> InstallPackages(IReadOnlyList<NugetPackage> packages, bool autoInstallDependencis, Action<string> installedProgress)
         {
             var installed = new List<NugetPackage>();
             foreach (var p in packages)
             {
                 //Always go through the installation method, to gather the dependency information
                 InstallPackage(p, autoInstallDependencis, installed);
-                /*if (!Directory.Exists(p.FullPath))
-                {
-                    InstallPackage(p, autoInstallDependencis, installed);
-                }
-                else
-                {
-                    installed.Add(p);
-                }*/
 
                 string extraMsg = "";
                 if (autoInstallDependencis)
                 {
                     extraMsg = " and its dependencies";
                 }
-                installedProgress?.Invoke($"Installed: {p.Id}, Version: {p.Version}{extraMsg}");
+                installedProgress?.Invoke($"Installed: {p.Id}, Version: {p.MinVersion}{extraMsg}");
             }
             return installed;
         }
@@ -209,8 +192,8 @@ namespace NugetHelper
             var th = new Thread(() =>
                            {
                                try
-                               {                                   
-                                   var t = PerformPackageActionAsync(requestedPackage, autoInstallDependencis, (package, toInstallPackage, settings, cache, logger) => InstallPackageActionAsync(package, toInstallPackage, settings, cache, logger, installed));
+                               {
+                                   var t = PerformPackageActionAsync(requestedPackage, autoInstallDependencis, installed, (package, toInstallPackage, settings, cache, logger, installedPackagesList) => InstallPackageActionAsync(package, toInstallPackage, settings, cache, logger, installedPackagesList));
                                    t.Wait();
                                }
                                catch (Exception e)
@@ -227,7 +210,7 @@ namespace NugetHelper
                 throw new Exception(string.Format("Unable to install package {0} or one of its dependencies. See inner exception for more details", requestedPackage.ToString()), threadEx);
             }
         }
-             
+
         /// <summary>
         /// This method looks for the requestedPackage and downloads it. 
         /// No installation nor dependency check is performed.
@@ -243,7 +226,7 @@ namespace NugetHelper
             {
                 try
                 {
-                    var t = PerformPackageActionAsync(requestedPackage, false, (package, toInstallPackage, settings, cache, logger) => DownloadPackageActionAsync(package, toInstallPackage, settings, cache, logger, destinationDirectory));
+                    var t = PerformPackageActionAsync(requestedPackage, false, null, (package, toInstallPackage, settings, cache, logger, installedPackagesList) => DownloadPackageActionAsync(package, toInstallPackage, settings, cache, logger, destinationDirectory));
                     t.Wait();
                 }
                 catch (Exception e)
@@ -278,13 +261,14 @@ namespace NugetHelper
             //var packagePathResolver = new PackagePathResolver(Path.Combine(packetRoot, packageToInstall.Id, packageToInstall.Version.ToFullString()), true);
             var packagePathResolver = new PackagePathResolver(packetRoot);
 
-            var frameworkReducer = new FrameworkReducer();
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
 
             var packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, logger), logger);
-            
+
             //Check if the package was previousely installed in this session
-            if (installedPackages.Where((x) => x.Id == packageToInstall.Id && x.Version.ToString() == packageToInstall.Version.ToString()).FirstOrDefault() == null)
+            var knownPackage = installedPackages.Where((x) => x.Id == packageToInstall.Id).FirstOrDefault();
+            var packageToInstallVersionRange = VersionRange.Parse(packageToInstall.Version.OriginalVersion);
+            if (knownPackage == null || !packageToInstallVersionRange.Satisfies(knownPackage.VersionRange.MinVersion))
             {
                 PackageReaderBase packageReader;
                 //Check if the package is already installed in the file system
@@ -292,7 +276,7 @@ namespace NugetHelper
                 if (installedPath == null)
                 {
                     var downloadResource = await packageToInstall.Source.GetResourceAsync<DownloadResource>(CancellationToken.None);
-                    
+
                     var download = downloadResource.GetDownloadResourceResultAsync(
                         packageToInstall,
                         new PackageDownloadContext(cacheContext),
@@ -315,53 +299,105 @@ namespace NugetHelper
                     packageReader = new PackageFolderReader(installedPath);
                 }
 
-                var newlyInstalled = requestedPackage;
+                NugetPackage newlyInstalled = null;
                 if (requestedPackage.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
                 {
-                    var libItems = packageReader.GetLibItems();
-                    var libFrameworks = libItems.Select(x => x.TargetFramework);
-
-                    var nearest = frameworkReducer.GetNearest(nuGetFramework, libFrameworks);
+                    var nearest = GetNearestFramework(packageReader, nuGetFramework);
 
                     if (nearest == null)
                     {
-                        newlyInstalled = null;
+                        throw new Exceptions.TargetFrameworkNotFoundException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency's available frameworks.");
+                    }
+                    else
+                    {
+                        newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.OriginalVersion,
+                                        nearest.Item2.GetShortFolderName(),
+                                        packageToInstall.Source.PackageSource.Source,
+                                        null, nearest.Item1, requestedPackage.RootPath);
+                    }
+                }
+                else
+                {
+                    NugetPackageType packageType = requestedPackage.PackageType;
 
-                        //For now, allow dependencies starting with Microsoft. and System. 
-                        //to have a non-match in the framework. The dependecy is probably coming from the
-                        //nuget package is probably delivered with .Net framework itself
-                        //Newtonsoft.Json 9.0.1 -> .netstandard1.0 references Microsoft.CSharp 4.01 -> netstandard1.3
-                        //.... !
-                        if (!packageToInstall.Id.StartsWith("Microsoft.") &&
-                            !packageToInstall.Id.StartsWith("System."))
+                    if (packageType != NugetPackageType.Other)
+                    {
+                        if (!CheckFrameworkMatch(packageReader, nuGetFramework, ref packageType))
                         {
-
-                            throw new NullReferenceException($"The current package {packageToInstall.Id} V{packageToInstall.Version} was installed as dependecy of {requestedPackage}. The parent package framework {nuGetFramework} is unknown/incompatible with the dependency available frameworks: {string.Join("\n", libFrameworks)}.");
+                            throw new Exceptions.TargetFrameworkNotFoundException($"The current package {packageToInstall.Id} V{packageToInstall.Version} requested framework {nuGetFramework} is unknown/incompatible with the available frameworks.");
                         }
                     }
-                    else
-                    {
-                        newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.ToString(),
-                                        nearest.GetShortFolderName(),
-                                        packageToInstall.Source.PackageSource.Source,
-                                        null, true, requestedPackage.RootPath);
-                    }
-                }
-                if (newlyInstalled != null)
-                {
-                    newlyInstalled.AddDependencies(packageToInstall.Dependencies);
 
-                    if (Directory.Exists(newlyInstalled.FullPath))
+                    if (requestedPackage.Source.AbsoluteUri != packageToInstall.Source.PackageSource.Source)
                     {
-                        newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
+                        //Possible Dependency Confusion attack
+                        throw new Exceptions.DependencyConfusionException($"The requested package has been found in {packageToInstall.Source.PackageSource.Source} instead of the required URI {requestedPackage.Source.AbsoluteUri}. Update the pakcage source if this is intended");
                     }
-                    else
-                    {
-                        throw new DirectoryNotFoundException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
-                    }
-                    installedPackages.Add(newlyInstalled);
+                    newlyInstalled = new NugetPackage(requestedPackage.Id, requestedPackage.VersionRange.OriginalString,
+                                    requestedPackage.TargetFramework,
+                                    requestedPackage.Source.AbsoluteUri,
+                                    null, packageType, requestedPackage.RootPath);
+                }
+
+                newlyInstalled.AddDependencies(packageToInstall.Dependencies);
+
+                if (Directory.Exists(newlyInstalled.FullPath))
+                {
+                    newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
+                }
+                else
+                {
+                    throw new Exceptions.InvalidAssemblyPathException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
+                }
+                installedPackages.Add(newlyInstalled);
+            }
+        }
+
+        private static bool CheckFrameworkMatch(PackageReaderBase packageReader, NuGetFramework targetFramework, ref NugetPackageType type)
+        {
+            var frameworkReducer = new FrameworkReducer();
+            Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            {
+                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
+                { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
+            };
+
+            foreach (var get in getter)
+            {
+                var items = get.Value();
+                var targetFrameworkString = targetFramework.GetFrameworkString();
+                var match = items.Where(x => targetFrameworkString == x.TargetFramework.GetFrameworkString());
+                if (match.Count() > 0)
+                {
+                    type = get.Key;
+                    return true;
                 }
             }
+            return false;
+        }
+
+        private static Tuple<NugetPackageType, NuGetFramework> GetNearestFramework(PackageReaderBase packageReader, NuGetFramework targetFramework)
+        {
+            var frameworkReducer = new FrameworkReducer();
+            Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            {
+                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
+                { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
+            };
+
+            NuGetFramework nearest = null;
+
+            foreach (var get in getter)
+            {
+                var items = get.Value();
+                var libFrameworks = items.Select(x => x.TargetFramework);
+                nearest = frameworkReducer.GetNearest(targetFramework, libFrameworks);
+                if (nearest != null)
+                {
+                    return new Tuple<NugetPackageType, NuGetFramework>(get.Key, nearest);
+                }
+            }
+            return null;
         }
 
         private static async Task DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, ILogger logger, string destinationDirectory)
@@ -388,7 +424,7 @@ namespace NugetHelper
         /// <param name="requestedPackage"></param>
         /// <param name="autoInstallDependencis"></param>
         /// <returns></returns>
-        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, ILogger, Task> action)
+        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, List<NugetPackage> installedPackages, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, ILogger, List<NugetPackage>, Task> action)
         {
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -396,7 +432,7 @@ namespace NugetHelper
             //var logger = NullLogger.Instance;
             var logger = new NugetLogger();
             var packageId = requestedPackage.Id;
-            var packageVersion = new NuGetVersion(requestedPackage.Version);
+            var packageVersion = requestedPackage.VersionRange.MinVersion;
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
             var settings = Settings.LoadDefaultSettings(root: requestedPackage.RootPath);
             var providers = Repository.Provider.GetCoreV3();
@@ -414,7 +450,7 @@ namespace NugetHelper
 
                 await GetPackageDependencyInfo(-1,
                     new PackageIdentity(packageId, packageVersion),
-                    nuGetFramework, cacheContext, logger, repositories, availablePackages);
+                    nuGetFramework, cacheContext, logger, repositories, availablePackages, installedPackages);
 
                 var resolverContext = new PackageResolverContext(
                     DependencyBehavior.Lowest,
@@ -426,9 +462,6 @@ namespace NugetHelper
                     repositories.Select(s => s.PackageSource),
                     logger);
 
-                //var resolver = new PackageResolver();
-                //var packagesFound = resolver.Resolve(resolverContext, CancellationToken.None);
-                //var packagesToInstall = packagesFound.Select(p => availablePackages.Single(x => PackageIdentityComparer.Default.Equals(x, p)));
                 IEnumerable<SourcePackageDependencyInfo> packagesToInstall = null;
                 if (autoInstallDependencis)
                 {
@@ -441,7 +474,7 @@ namespace NugetHelper
 
                 foreach (var packageToInstall in packagesToInstall)
                 {
-                    await action(requestedPackage, packageToInstall, settings, cacheContext, logger);
+                    await action(requestedPackage, packageToInstall, settings, cacheContext, logger, installedPackages);
                 }
             }
         }
@@ -451,7 +484,8 @@ namespace NugetHelper
             SourceCacheContext cacheContext,
             ILogger logger,
             IEnumerable<SourceRepository> repositories,
-            ISet<SourcePackageDependencyInfo> availablePackages)
+            ISet<SourcePackageDependencyInfo> availablePackages,
+            List<NugetPackage> installedPackages)
         {
             if (availablePackages.Contains(package)) return;
             var packageFound = false;
@@ -477,9 +511,13 @@ namespace NugetHelper
                     resolveDependencyLevels--;
                     foreach (var dependency in dependencyInfo.Dependencies)
                     {
-                        await GetPackageDependencyInfo(resolveDependencyLevels,
+                        var knownPackage = installedPackages.Where((x) => x.Id == dependency.Id).FirstOrDefault();
+                        if (knownPackage == null || !dependency.VersionRange.Satisfies(knownPackage.VersionRange.MinVersion))
+                        {
+                            await GetPackageDependencyInfo(resolveDependencyLevels,
                             new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion),
-                            framework, cacheContext, logger, repositories, availablePackages);
+                            framework, cacheContext, logger, repositories, availablePackages, installedPackages);
+                        }
                     }
                 }
                 break;
