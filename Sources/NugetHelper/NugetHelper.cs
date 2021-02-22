@@ -157,7 +157,10 @@ namespace NugetHelper
                         else if (forceMinMatch)
                         {
                             var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
-                            if (minVersionString != dependencyCandidate.MinVersion)
+
+                            if (
+                                !minVersionString.StartsWith(dependencyCandidate.MinVersion) || 
+                                minVersionString.Replace(dependencyCandidate.MinVersion, "").Replace(".", "").Where(x => x != '0').Count() > 0)
                             {
                                 ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
                             }
@@ -310,7 +313,14 @@ namespace NugetHelper
                     }
                     else
                     {
-                        newlyInstalled = new NugetPackage(packageToInstall.Id, packageToInstall.Version.OriginalVersion,
+                        var version = packageToInstall.Version;
+                        try
+                        {   //If available, get the NuSpec version
+                            version = packageReader.NuspecReader.GetVersion();
+                        }
+                        catch (NuGet.Packaging.Core.PackagingException) { }
+
+                        newlyInstalled = new NugetPackage(packageToInstall.Id, version.OriginalVersion,
                                         nearest.Item2.GetShortFolderName(),
                                         packageToInstall.Source.PackageSource.Source,
                                         null, nearest.Item1, requestedPackage.RootPath);
