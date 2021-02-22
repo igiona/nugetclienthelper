@@ -115,6 +115,7 @@ namespace NugetHelper.Test
         }
 
         [TestCase("Unity.Container", "5.11.10", "netstandard2.0", "https://api.nuget.org/v3/index.json")]
+        [TestCase("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json")] //Short version format.
         public void InstallPackage(string id, string version, string target, string source)
         {
             var p = new NugetPackage(id, version, target, source, null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
@@ -213,6 +214,45 @@ namespace NugetHelper.Test
             //With the flag set to true, this thest should now fail, because the exact min version 0.0.2 is missing
             Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundExceptio>(() => NugetHelper.CheckPackagesConsistency(packages, true));
         }
+
+        /// <summary>
+        /// Unity has a reference to CommonServiceLocator version 1.3.0 => the version comes really as 1.3.0!
+        /// CommonServiceLocator version 1.3.0 doesn't actually exists, the nuspec specifies the version 1.3!
+        /// Check that the code creates the correct FullPath (checked in the NugetHelper code)
+        /// 
+        /// NOTE: the package CommonServiceLocator is installed under portable-net4+sl5+netcore45+wpa81+wp8
+        /// When installed as dependency of Unity, the code currently resolves the framework to portable-net40+sl5+win8+wp8+wpa81
+        /// causing this test to fail. 
+        /// For this reason, it's set as explicit!
+        /// </summary>
+        [Test, Explicit]
+        public void VersionConsistencyCheckOnDependency()
+        {
+            var packages = new List<NugetPackage>();
+            packages.Add(new NugetPackage("Unity", "4.0.1", "net45", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NugetPackage("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, true, null).ToList();
+            NugetHelper.CheckPackagesConsistency(packages);
+
+        }
+
+        /// <summary>
+        /// Unity has a reference to CommonServiceLocator version 1.3.0 => the version comes really as 1.3.0!
+        /// CommonServiceLocator version 1.3.0 doesn't actually exists, the nuspec specifies the version 1.3!
+        /// Check that the code creates the correct FullPath (checked in the NugetHelper code) and that the 
+        /// consistency check works, since the package 1.3 is inf act equal as the package 1.3.0
+        /// </summary>
+        [Test]
+        public void VersionConsistencyCheckOnPackage()
+        {
+            var packages = new List<NugetPackage>();
+            packages.Add(new NugetPackage("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NugetPackage("Unity", "4.0.1", "net45", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, true, null).ToList();
+            NugetHelper.CheckPackagesConsistency(packages, true);
+
+        }
+
 
         [TestCase("Newtonsoft.Json", "9.0.1", "netstandard1.0")]
         [TestCase("Newtonsoft.Json", "12.0.3", "netstandard2.0")]
