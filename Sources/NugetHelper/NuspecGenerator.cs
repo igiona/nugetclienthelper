@@ -158,7 +158,7 @@ namespace NugetHelper
                 customElements = string.Join($"{Environment.NewLine}    ", lines);
             }
             var content = string.Format(_nuspecTemplate, spec.Id, packageVersion, customElements, dependencies);
-            File.WriteAllText(Path.Combine(outDir, spec.FileName), content);
+            Utilities.WriteAllText(Path.Combine(outDir, spec.FileName), content);
         }
     }
 }
