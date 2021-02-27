@@ -38,7 +38,7 @@ namespace NugetHelper
             if (sources.Length > 0)
             {
                 var content = string.Format(_configTemplate, sources.ToString());
-                File.WriteAllText(Path.Combine(outDir, NugetConfigName), content);
+                Utilities.WriteAllText(Path.Combine(outDir, NugetConfigName), content);
             }
         }
 
