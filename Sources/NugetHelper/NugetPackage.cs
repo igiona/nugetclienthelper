@@ -20,15 +20,7 @@ namespace NugetHelper
             Id = id;
             VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
             MinVersion = VersionRange.ToNonSnapshotRange().MinVersion.ToString();
-            if (!string.IsNullOrEmpty(targetFramework))
-            {
-                TargetFramework = System.Environment.ExpandEnvironmentVariables(targetFramework);
-            }
-            else
-            {
-                TargetFramework = "";
-            }
-
+            
             if (string.IsNullOrEmpty(source))
             {
                 throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, MinVersion));
@@ -36,33 +28,9 @@ namespace NugetHelper
             Source = new Uri(System.Environment.ExpandEnvironmentVariables(source));
             
             RootPath = packagesRoot;
-            var basePath = Path.Combine(RootPath, string.Format("{0}.{1}", Id, MinVersion));
-            PackageType = packageType;
 
-            if (PackageType == NugetPackageType.DotNetImplementationAssembly)
-            {
-                if (string.IsNullOrEmpty(TargetFramework))
-                {
-                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
-                }
-                FullPath = Path.Combine(basePath, DotNetImplementationAssemblyPath, TargetFramework);
-            }
-            else if (PackageType == NugetPackageType.DotNetCompileTimeAssembly)
-            {
-                if (string.IsNullOrEmpty(TargetFramework))
-                {
-                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
-                }
-                FullPath = Path.Combine(basePath, DotNetCompileTimeAssemblyPath, TargetFramework);
-            }
-            else
-            {
-                FullPath = basePath;
-                if (!string.IsNullOrEmpty(TargetFramework))
-                {
-                    FullPath = Path.Combine(FullPath, TargetFramework);
-                }
-            }
+            SetDotNetLibInformation(targetFramework, packageType);
+
             EnvironmentVariableKeys = new List<string>();
             EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Id));
             EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Id));
@@ -191,6 +159,68 @@ namespace NugetHelper
         public static bool operator !=(NugetPackage lhs, NugetPackage rhs)
         {
             return !(lhs == rhs);
+        }
+
+        private void SetDotNetLibInformation(string targetFramework, NugetPackageType t)
+        {
+            PackageType = t;
+            TargetFramework = "";
+            var assemblyFolderDict = new Dictionary<NugetPackageType, string>() {
+                { NugetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
+                { NugetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
+            };
+
+            if (!string.IsNullOrEmpty(targetFramework))
+            {
+                TargetFramework = System.Environment.ExpandEnvironmentVariables(targetFramework);
+            }
+            
+            var basePath = Path.Combine(RootPath, string.Format("{0}.{1}", Id, MinVersion));
+
+            if (t == NugetPackageType.DotNetImplementationAssembly || t == NugetPackageType.DotNetCompileTimeAssembly)
+            {
+                if (string.IsNullOrEmpty(TargetFramework))
+                {
+                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
+                }
+                FullPath = Path.Combine(basePath, assemblyFolderDict[t], TargetFramework);
+            }
+            else
+            {
+                FullPath = basePath;
+                if (!string.IsNullOrEmpty(TargetFramework))
+                {
+                    FullPath = Path.Combine(FullPath, TargetFramework);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads in the <see cref="Libraries"/> property all the files present in the FullPath.
+        /// </summary>
+        /// <exception cref="Exceptions.InvalidAssemblyPathException">Thrown when the FullPath doesn't exists, or cannot be resolved (e.g. Any framework)</exception>
+        public void LoadLibraries()
+        {
+            var validFullPath = true;
+            if (!Directory.Exists(FullPath))
+            {
+                validFullPath = false;
+                if (NuGet.Frameworks.NuGetFramework.ParseFolder(TargetFramework) == NuGet.Frameworks.NuGetFramework.AnyFramework)
+                {
+                    //In case of Any framework, try to exclude the framework name from the path
+                    FullPath = Path.GetDirectoryName(FullPath);
+                    validFullPath = Directory.Exists(FullPath);
+                }
+            }
+
+            if (validFullPath)
+            {
+                AddLibraries(Directory.GetFiles(FullPath));
+            }
+            else
+            {
+                throw new Exceptions.InvalidAssemblyPathException($"The installed package {this} has an invalid library path {FullPath}");
+            }
         }
     }
 }
