@@ -233,26 +233,50 @@ namespace NugetHelper.Test
             packages.Add(new NugetPackage("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
             packages = NugetHelper.InstallPackages(packages, true, null).ToList();
             NugetHelper.CheckPackagesConsistency(packages);
-
         }
 
         /// <summary>
-        /// Unity has a reference to CommonServiceLocator version 1.3.0 => the version comes really as 1.3.0!
+        /// Unity has a dependency to CommonServiceLocator version 1.3.0 => the version comes really as 1.3.0!
         /// CommonServiceLocator version 1.3.0 doesn't actually exists, the nuspec specifies the version 1.3!
         /// Check that the code creates the correct FullPath (checked in the NugetHelper code) and that the 
-        /// consistency check works, since the package 1.3 is inf act equal as the package 1.3.0
+        /// consistency check works, since the package 1.3 is in fact equal as the package 1.3.0
         /// </summary>
         [Test]
-        public void VersionConsistencyCheckOnPackage()
+        public void VersionConsistencyCheckOnPackageOnPackage()
         {
             var packages = new List<NugetPackage>();
             packages.Add(new NugetPackage("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
             packages.Add(new NugetPackage("Unity", "4.0.1", "net45", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
             packages = NugetHelper.InstallPackages(packages, true, null).ToList();
             NugetHelper.CheckPackagesConsistency(packages, true);
-
         }
 
+        /// <summary>
+        /// TestVersionConflict;1.0.0 as a dependency to System.Management.Automation.dll;10.0.10586
+        /// System.Management.Automation.dll;10.0.10586 doesn't exist, the version on NuGet.og is actually 10.0.10586.0
+        /// 
+        /// Check that the consistency-check works, since the package version 10.0.10586 is in fact equal as the package 10.0.10586.0 
+        /// </summary>
+        [Test]
+        public void VersionConsistencyCheckOnPackageOnDependency()
+        {
+            var packages = new List<NugetPackage>();
+            packages.Add(new NugetPackage("TestVersionConflict", "1.0.0", "net45", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NugetPackage("System.Management.Automation.dll", "10.0.10586.0", "net40", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, true, null).ToList();
+            NugetHelper.CheckPackagesConsistency(packages, true);
+        }
+
+        [TestCase("1.0.0", "net45")]
+        [TestCase("2.0.0", "Any")]
+        [TestCase("3.0.0", "Any")]
+        public void TestNearestFrameworkAny(string version, string targetFramework)
+        {
+            var packages = new List<NugetPackage>();
+            packages.Add(new NugetPackage("TestFrameworkAny", version, targetFramework, GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, true, null).ToList();
+            NugetHelper.CheckPackagesConsistency(packages, true);
+        }
 
         [TestCase("Newtonsoft.Json", "9.0.1", "netstandard1.0")]
         [TestCase("Newtonsoft.Json", "12.0.3", "netstandard2.0")]
@@ -285,6 +309,9 @@ namespace NugetHelper.Test
             packages = NugetHelper.InstallPackages(packages, false, null).ToList();
             //Should fail because at least the dependency to Microsoft.CSharp is missing.
             Assert.Throws<Exceptions.DependencyNotFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
+
+            //Should not fail because the dependency check is inhibited. 
+            NugetHelper.CheckPackagesConsistency(packages, false, true);
         }
     }
 }

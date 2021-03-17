@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>TestFrameworkAny</id>
+    <version>3.0.0</version>
+    <description>Test</description>
+    <authors>Test</authors>
+    <projectUrl>https://git.immo-electronics.ch/giona.imperatori/nugethelper</projectUrl>
+    <tags>test</tags>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <dependencies>
+      <group targetFramework=".NETFramework4.5">
+      </group>
+    </dependencies>  
+  </metadata>
+</package>

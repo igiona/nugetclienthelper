@@ -124,7 +124,7 @@ namespace NugetHelper
             throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
         }
 
-        public static void CheckPackagesConsistency(IReadOnlyList<NugetPackage> packages, bool forceMinMatch = false)
+        public static void CheckPackagesConsistency(IReadOnlyList<NugetPackage> packages, bool forceMinMatch = false, bool ignoreDependencies = false)
         {
             foreach (var p in packages)
             {
@@ -135,34 +135,38 @@ namespace NugetHelper
                     ThrowException<Exceptions.MultiplePackagesFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
                 }
 
-                foreach (var d in p.Dependencies)
+                if (!ignoreDependencies)
                 {
-                    var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
-                    if (dependecyFoundInList.Count() == 0)
+                    foreach (var d in p.Dependencies)
                     {
-                        ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
-                    }
-                    else if (dependecyFoundInList.Count() > 1)
-                    {
-                        ThrowException<Exceptions.MultipleDependenciesFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
-                    }
-                    else
-                    {
-                        var dependencyCandidate = dependecyFoundInList.Single();
-
-                        if (!d.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
+                        var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
+                        if (dependecyFoundInList.Count() == 0)
                         {
-                            ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
                         }
-                        else if (forceMinMatch)
+                        else if (dependecyFoundInList.Count() > 1)
                         {
-                            var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+                            ThrowException<Exceptions.MultipleDependenciesFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
+                        }
+                        else
+                        {
+                            var dependencyCandidate = dependecyFoundInList.Single();
 
-                            if (
-                                !minVersionString.StartsWith(dependencyCandidate.MinVersion) || 
-                                minVersionString.Replace(dependencyCandidate.MinVersion, "").Replace(".", "").Where(x => x != '0').Count() > 0)
+                            if (!d.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
                             {
-                                ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                            }
+                            else if (forceMinMatch)
+                            {
+                                var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+
+                                if (
+                                    minVersionString.Replace(dependencyCandidate.MinVersion, "").Replace(".", "").Where(x => x != '0').Any() &&
+                                    dependencyCandidate.MinVersion.Replace(minVersionString, "").Replace(".", "").Where(x => x != '0').Any()
+                                   )
+                                {
+                                    ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                }
                             }
                         }
                     }
@@ -351,14 +355,8 @@ namespace NugetHelper
 
                 newlyInstalled.AddDependencies(packageToInstall.Dependencies);
 
-                if (Directory.Exists(newlyInstalled.FullPath))
-                {
-                    newlyInstalled.AddLibraries(Directory.GetFiles(newlyInstalled.FullPath));
-                }
-                else
-                {
-                    throw new Exceptions.InvalidAssemblyPathException($"The installed package {newlyInstalled} has an invalid library path {newlyInstalled.FullPath}");
-                }
+                newlyInstalled.LoadLibraries();
+                
                 installedPackages.Add(newlyInstalled);
             }
         }
@@ -458,10 +456,11 @@ namespace NugetHelper
             {
                 var availablePackages = new HashSet<SourcePackageDependencyInfo>(PackageIdentityComparer.Default);
 
-                await GetPackageDependencyInfo(-1,
+                var dependencyWalkLevel = autoInstallDependencis? -1 : 0;
+                await GetPackageDependencyInfo(dependencyWalkLevel,
                     new PackageIdentity(packageId, packageVersion),
                     nuGetFramework, cacheContext, logger, repositories, availablePackages, installedPackages);
-
+                
                 var resolverContext = new PackageResolverContext(
                     DependencyBehavior.Lowest,
                     new[] { packageId },
