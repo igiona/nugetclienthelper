@@ -13,13 +13,14 @@ namespace NugetHelper
 
         public const string DotNetImplementationAssemblyPath = "lib";
 
-        public NugetPackage(string id, string version, string targetFramework, string source, string var, NugetPackageType packageType, string packagesRoot)
+        public NugetPackage(string id, string version, string targetFramework, string source, string var, NugetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
         {
-            Dependencies = new List<NuGet.Packaging.Core.PackageDependency>();
+            Dependencies = new List<NugetDependency>();
             Libraries = new List<string>();
             Id = id;
             VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
             MinVersion = VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+            DependenciesForceMinVersion = dependeciesForceMinVersion;
             
             if (string.IsNullOrEmpty(source))
             {
@@ -52,6 +53,8 @@ namespace NugetHelper
         public string Id { get; private set; }
 
         public string MinVersion { get; private set; }
+        
+        public bool DependenciesForceMinVersion { get; private set; }
 
         public NuGet.Versioning.VersionRange VersionRange { get; private set; }
 
@@ -71,7 +74,7 @@ namespace NugetHelper
 
         public NugetPackageType PackageType { get; private set; }
         
-        public List<NuGet.Packaging.Core.PackageDependency> Dependencies { get; private set; }
+        public List<NugetDependency> Dependencies { get; private set; }
 
         public List<string> Libraries { get; private set; }
 
@@ -97,7 +100,7 @@ namespace NugetHelper
 
         public void AddDependencies(IEnumerable<NuGet.Packaging.Core.PackageDependency> dependencies)
         {
-            Dependencies.AddRange(dependencies);
+            Dependencies.AddRange(dependencies.Select(x => new NugetDependency(x, DependenciesForceMinVersion)));
         }
 
         public void AddLibraries(IEnumerable<string> libraries)

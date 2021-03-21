@@ -44,7 +44,7 @@ namespace NugetHelper
 
             /*
             This approach creates a lib/<framework> as necessary, depending on the target framework of each assembly.
-            An issue will arise when referencing suc nuget package via SlnX, because as per today there only one
+            An issue will arise when referencing such nuget package via SlnX, because as per today there only one
             targetFramework can be selected on each <package ... /> element.
             Another potential issue is caused by NuGet.exe (see https://docs.microsoft.com/en-us/nuget/reference/nuspec#dependencies-element).
             For each lib/<framework> there should be a 
@@ -88,7 +88,7 @@ namespace NugetHelper
             */
 
             var frameworkReducer = new FrameworkReducer();
-            var highestFramework = frameworkReducer.ReduceUpwards(spec.Files.Select(x => NuGetFramework.Parse(x.Key))).ToList();
+            var highestFramework = frameworkReducer.ReduceUpwards(spec.Elements.Select(x => NuGetFramework.Parse(x.Key))).ToList();
             if (highestFramework.Count != 1)
             {
                 var required = string.Join(Environment.NewLine, highestFramework);
@@ -100,11 +100,11 @@ namespace NugetHelper
 
             if (packageVersion == null)
             {
-                if (!spec.Files.ContainsKey(highestFrameworkName))
+                if (!spec.Elements.ContainsKey(highestFrameworkName))
                 {
                     throw new Exception($"The .NET version of the required package {spec.Id} has been resolved to {highestFrameworkName}. No file has been found under that framework.");
                 }
-                var assemblies = spec.Files[highestFrameworkName].Where(x => x.EndsWith(".dll"));
+                var assemblies = spec.Elements[highestFrameworkName].Where(x => File.Exists(x) && (x.ToLower().EndsWith(".dll") || x.ToLower().EndsWith(".exe")));
                 if (assemblies.Count() == 0)
                 {
                     throw new Exception("Error while loading the nuget information. No DLL found from which automatically retrieve the version information.");
@@ -122,13 +122,21 @@ namespace NugetHelper
                 }
             }
 
-            foreach (var frameworkItems in spec.Files)
+            foreach (var frameworkItems in spec.Elements)
             {
                 var frameworkDir = Path.Combine(outDir, "lib", highestFrameworkName);
                 Directory.CreateDirectory(frameworkDir);
                 foreach (var f in frameworkItems.Value)
                 {
-                    File.Copy(f, Path.Combine(frameworkDir, Path.GetFileName(f)), true);
+                    FileAttributes attr = File.GetAttributes(f);
+                    if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                    {
+                        CopyDirectory(f, Path.Combine(frameworkDir, Path.GetFileName(f)));
+                    }
+                    else
+                    {
+                        File.Copy(f, Path.Combine(frameworkDir, Path.GetFileName(f)), true);
+                    }
                 }
             }
             var dependencies = new StringBuilder();
@@ -159,6 +167,32 @@ namespace NugetHelper
             }
             var content = string.Format(_nuspecTemplate, spec.Id, packageVersion, customElements, dependencies);
             Utilities.WriteAllText(Path.Combine(outDir, spec.FileName), content);
+        }
+
+        public static void CopyDirectory(string sourceDirectory, string targetDirectory)
+        {
+            DirectoryInfo diSource = new DirectoryInfo(sourceDirectory);
+            DirectoryInfo diTarget = new DirectoryInfo(targetDirectory);
+            CopyAll(diSource, diTarget);
+        }
+
+        public static void CopyAll(DirectoryInfo source, DirectoryInfo target)
+        {
+            Directory.CreateDirectory(target.FullName);
+
+            // Copy each file into the new directory.
+            foreach (FileInfo fi in source.GetFiles())
+            {
+                fi.CopyTo(Path.Combine(target.FullName, fi.Name), true);
+            }
+
+            // Copy each subdirectory using recursion.
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            {
+                DirectoryInfo nextTargetSubDir =
+                    target.CreateSubdirectory(diSourceSubDir.Name);
+                CopyAll(diSourceSubDir, nextTargetSubDir);
+            }
         }
     }
 }

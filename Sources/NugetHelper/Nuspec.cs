@@ -28,11 +28,11 @@ namespace NugetHelper
 
         public string AdditionalElements { get; private set; }
 
-        public ReadOnlyDictionary<string, List<string>> Files { get { return new ReadOnlyDictionary<string, List<string>>(_files); } }
+        public ReadOnlyDictionary<string, List<string>> Elements { get { return new ReadOnlyDictionary<string, List<string>>(_files); } }
         
         public ReadOnlyCollection<NugetPackage> Dependecies { get { return _dependecies.AsReadOnly(); } }
 
-        public void AddLibraryFile(string framework, string file)
+        public void AddLibraryElements(string framework, string file)
         {
             if (!_files.ContainsKey(framework))
             {
