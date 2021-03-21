@@ -139,10 +139,10 @@ namespace NugetHelper
                 {
                     foreach (var d in p.Dependencies)
                     {
-                        var dependecyFoundInList = packages.Where(x => x.Id == d.Id);
+                        var dependecyFoundInList = packages.Where(x => x.Id == d.PackageDependency.Id);
                         if (dependecyFoundInList.Count() == 0)
                         {
-                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d }, $"The dependency {d} of the packet with id {p.Id} is not present.");
+                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d.PackageDependency }, $"The dependency {d} of the packet with id {p.Id} is not present.");
                         }
                         else if (dependecyFoundInList.Count() > 1)
                         {
@@ -152,20 +152,20 @@ namespace NugetHelper
                         {
                             var dependencyCandidate = dependecyFoundInList.Single();
 
-                            if (!d.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
+                            if (!d.PackageDependency.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
                             {
-                                ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
                             }
-                            else if (forceMinMatch)
+                            else if (forceMinMatch && d.ForceMinVersion)
                             {
-                                var minVersionString = d.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+                                var minVersionString = d.PackageDependency.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
 
                                 if (
                                     minVersionString.Replace(dependencyCandidate.MinVersion, "").Replace(".", "").Where(x => x != '0').Any() &&
                                     dependencyCandidate.MinVersion.Replace(minVersionString, "").Replace(".", "").Where(x => x != '0').Any()
                                    )
                                 {
-                                    ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                    ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
                                 }
                             }
                         }
@@ -327,7 +327,7 @@ namespace NugetHelper
                         newlyInstalled = new NugetPackage(packageToInstall.Id, version.OriginalVersion,
                                         nearest.Item2.GetShortFolderName(),
                                         packageToInstall.Source.PackageSource.Source,
-                                        null, nearest.Item1, requestedPackage.RootPath);
+                                        null, nearest.Item1, requestedPackage.RootPath, requestedPackage.DependenciesForceMinVersion);
                     }
                 }
                 else
@@ -350,7 +350,7 @@ namespace NugetHelper
                     newlyInstalled = new NugetPackage(requestedPackage.Id, requestedPackage.VersionRange.OriginalString,
                                     requestedPackage.TargetFramework,
                                     requestedPackage.Source.AbsoluteUri,
-                                    null, packageType, requestedPackage.RootPath);
+                                    null, packageType, requestedPackage.RootPath, requestedPackage.DependenciesForceMinVersion);
                 }
 
                 newlyInstalled.AddDependencies(packageToInstall.Dependencies);

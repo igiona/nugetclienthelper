@@ -213,6 +213,14 @@ namespace NugetHelper.Test
 
             //With the flag set to true, this thest should now fail, because the exact min version 0.0.2 is missing
             Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundExceptio>(() => NugetHelper.CheckPackagesConsistency(packages, true));
+
+            packages.Clear();
+            packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath(), false));
+            packages.Add(new NugetPackage("CoreLib", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, false, null).ToList();
+            //Although the Lib2 is build against the CoreLib;0.0.2 this test should pass.
+            //This because hte packge TestLib2 is instantiated with the parameter dependencyForceMinVersion set to false.
+            NugetHelper.CheckPackagesConsistency(packages, true);
         }
 
         /// <summary>
