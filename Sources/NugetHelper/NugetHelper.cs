@@ -106,6 +106,8 @@ namespace NugetHelper
             }
         }
 
+        private static ILogger _logger = new NugetLogger();
+
         private static void ThrowException<T>(NugetPackage p, IEnumerable<NugetPackage> packages, string message) where T : Exception
         {
             var newPackages = new List<NugetPackage>();
@@ -122,6 +124,11 @@ namespace NugetHelper
         private static void ThrowException<T>(IEnumerable<PackageDependency> packages, string message) where T : Exception
         {
             throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
+        }
+
+        public static void SetLogger(ILogger logger)
+        {
+            _logger = logger;
         }
 
         public static void CheckPackagesConsistency(IReadOnlyList<NugetPackage> packages, bool forceMinMatch = false, bool ignoreDependencies = false)
@@ -200,7 +207,7 @@ namespace NugetHelper
                            {
                                try
                                {
-                                   var t = PerformPackageActionAsync(requestedPackage, autoInstallDependencis, installed, (package, toInstallPackage, settings, cache, logger, installedPackagesList) => InstallPackageActionAsync(package, toInstallPackage, settings, cache, logger, installedPackagesList));
+                                   var t = PerformPackageActionAsync(requestedPackage, autoInstallDependencis, installed, (package, toInstallPackage, settings, cache, installedPackagesList) => InstallPackageActionAsync(package, toInstallPackage, settings, cache, installedPackagesList));
                                    t.Wait();
                                }
                                catch (Exception e)
@@ -233,7 +240,7 @@ namespace NugetHelper
             {
                 try
                 {
-                    var t = PerformPackageActionAsync(requestedPackage, false, null, (package, toInstallPackage, settings, cache, logger, installedPackagesList) => DownloadPackageActionAsync(package, toInstallPackage, settings, cache, logger, destinationDirectory));
+                    var t = PerformPackageActionAsync(requestedPackage, false, null, (package, toInstallPackage, settings, cache, installedPackagesList) => DownloadPackageActionAsync(package, toInstallPackage, settings, cache, destinationDirectory));
                     t.Wait();
                 }
                 catch (Exception e)
@@ -261,7 +268,6 @@ namespace NugetHelper
                                                             SourcePackageDependencyInfo packageToInstall,
                                                             ISettings settings,
                                                             SourceCacheContext cacheContext,
-                                                            ILogger logger,
                                                             List<NugetPackage> installedPackages)
         {
             var packetRoot = Path.GetFullPath(requestedPackage.RootPath);
@@ -270,7 +276,7 @@ namespace NugetHelper
 
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
 
-            var packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, logger), logger);
+            var packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, _logger), _logger);
 
             //Check if the package was previousely installed in this session
             var knownPackage = installedPackages.Where((x) => x.Id == packageToInstall.Id).FirstOrDefault();
@@ -288,7 +294,7 @@ namespace NugetHelper
                         packageToInstall,
                         new PackageDownloadContext(cacheContext),
                         SettingsUtility.GetGlobalPackagesFolder(settings),
-                        logger, CancellationToken.None);
+                        _logger, CancellationToken.None);
                     download.Wait();
                     var downloadResult = download.Result;
 
@@ -408,7 +414,7 @@ namespace NugetHelper
             return null;
         }
 
-        private static async Task DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, ILogger logger, string destinationDirectory)
+        private static async Task DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, string destinationDirectory)
         {
             string packagePath = Path.Combine(destinationDirectory, packageToInstall.ToString());
             if (!File.Exists(packagePath))
@@ -418,7 +424,7 @@ namespace NugetHelper
                     packageToInstall,
                     new PackageDownloadContext(cacheContext),
                     SettingsUtility.GetGlobalPackagesFolder(settings),
-                    logger, CancellationToken.None);
+                    _logger, CancellationToken.None);
 
                 Directory.CreateDirectory(destinationDirectory);
                 downloadResult.PackageStream.CopyToFile(packagePath);
@@ -432,13 +438,11 @@ namespace NugetHelper
         /// <param name="requestedPackage"></param>
         /// <param name="autoInstallDependencis"></param>
         /// <returns></returns>
-        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, List<NugetPackage> installedPackages, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, ILogger, List<NugetPackage>, Task> action)
+        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, List<NugetPackage> installedPackages, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, List<NugetPackage>, Task> action)
         {
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-            //var logger = NullLogger.Instance;
-            var logger = new NugetLogger();
             var packageId = requestedPackage.Id;
             var packageVersion = requestedPackage.VersionRange.MinVersion;
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
@@ -459,7 +463,7 @@ namespace NugetHelper
                 var dependencyWalkLevel = autoInstallDependencis? -1 : 0;
                 await GetPackageDependencyInfo(dependencyWalkLevel,
                     new PackageIdentity(packageId, packageVersion),
-                    nuGetFramework, cacheContext, logger, repositories, availablePackages, installedPackages);
+                    nuGetFramework, cacheContext, _logger, repositories, availablePackages, installedPackages);
                 
                 var resolverContext = new PackageResolverContext(
                     DependencyBehavior.Lowest,
@@ -469,7 +473,7 @@ namespace NugetHelper
                     Enumerable.Empty<PackageIdentity>(),
                     availablePackages,
                     repositories.Select(s => s.PackageSource),
-                    logger);
+                    _logger);
 
                 IEnumerable<SourcePackageDependencyInfo> packagesToInstall = null;
                 if (autoInstallDependencis)
@@ -483,7 +487,7 @@ namespace NugetHelper
 
                 foreach (var packageToInstall in packagesToInstall)
                 {
-                    await action(requestedPackage, packageToInstall, settings, cacheContext, logger, installedPackages);
+                    await action(requestedPackage, packageToInstall, settings, cacheContext, installedPackages);
                 }
             }
         }
@@ -506,13 +510,22 @@ namespace NugetHelper
                     var dependencyInfoResource = await sourceRepository.GetResourceAsync<DependencyInfoResource>();
                     dependencyInfo = await dependencyInfoResource.ResolvePackage(package, framework, cacheContext, logger, CancellationToken.None);
                 }
+                catch (NuGet.Protocol.Core.Types.FatalProtocolException e)
+                {
+                    throw new Exception((string.Format("Fatal error while fetching the package {0} from the repository {1}.\nPlease check your internet/VPN connections\nAdditional information: {2}", package.Id, sourceRepository.PackageSource.ToString(), string.Join("\n", new AggregateException(e).InnerExceptions.Select(x => x?.Message)))));
+                }
                 catch (Exception e)
                 {
-                    logger.LogWarning(string.Format("Unable to fetch the package info from the repository {0}.\n\nError: {1}", sourceRepository.PackageSource.ToString(), string.Join("\n", new AggregateException(e).InnerExceptions.Select(x => x?.Message))));
+                    logger.LogError(string.Format("Unable to fetch the package info from the repository {0}.\n\nError: {1}", sourceRepository.PackageSource.SourceUri, string.Join("\n", new AggregateException(e).InnerExceptions.Select(x => x?.Message))));
                     continue;
                 }
 
-                if (dependencyInfo == null) continue;
+                if (dependencyInfo == null)
+                {
+                    logger.LogVerbose($"The package {package.Id} was not found under the repository {sourceRepository.PackageSource.SourceUri}");
+                    continue;
+                }
+
                 packageFound = true;
                 availablePackages.Add(dependencyInfo);
                 if (resolveDependencyLevels < 0 || resolveDependencyLevels > 0)
