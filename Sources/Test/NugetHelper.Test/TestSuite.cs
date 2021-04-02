@@ -286,6 +286,51 @@ namespace NugetHelper.Test
             NugetHelper.CheckPackagesConsistency(packages, true);
         }
 
+        /// <summary>
+        /// The provided test packages have both compileTime and implementation assemblies compatible with the requested framework.
+        /// This test ensures that the the implementation assemblies are selected.
+        /// </summary>
+        [TestCase("System.Buffers", "4.5.1", "net461")]
+        [TestCase("System.Numerics.Vectors", "4.5.0", "net46")]
+        [TestCase("System.Runtime.CompilerServices.Unsafe", "4.5.3", "net461")]
+        public void EnsureImplementationAssembliesWhenAvailable(string id, string version, string framework)
+        {
+            var packages = new List<NugetPackage>();
+
+            packages.Add(new NugetPackage(id, version, framework, "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, false, null).ToList();
+
+            Assert.IsTrue(packages.First().PackageType == NugetPackageType.DotNetImplementationAssembly);
+        }
+
+        /// <summary>
+        /// System.Resources.Extensions is a compile time assembly, with dependencies to (directly, or indirectly):
+        /// - System.Memory
+        /// - System.Buffers
+        /// - System.Numerics.Vectors
+        /// - System.Runtime.CompilerServices.Unsafe
+        /// Numerics.Vectors and CompilerServices.Unsafe have both compileTime and implementation assemblies compatible with the requested framework.
+        /// This test ensures that the the implementation assemblies are selected when the packages are installed as dependencies.
+        /// </summary>
+        [Test]
+        public void EnsureImplementationAssembliesWhenAvailableOnDependency()
+        {
+            var packages = new List<NugetPackage>();
+
+            packages.Add(new NugetPackage("System.Resources.Extensions", "5.0.0", "net461", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages = NugetHelper.InstallPackages(packages, true, null).ToList();
+
+            Assert.IsTrue(packages.Any(x => x.Id == "System.Memory"));
+            Assert.IsTrue(packages.Any(x => x.Id == "System.Buffers"));
+            Assert.IsTrue(packages.Any(x => x.Id == "System.Numerics.Vectors"));
+            Assert.IsTrue(packages.Any(x => x.Id == "System.Runtime.CompilerServices.Unsafe"));
+
+            Assert.IsTrue(packages.Where(x => x.Id == "System.Numerics.Vectors").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(packages.Where(x => x.Id == "System.Runtime.CompilerServices.Unsafe").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
+
+            NugetHelper.CheckPackagesConsistency(packages);
+        }
+
         [TestCase("Newtonsoft.Json", "9.0.1", "netstandard1.0")]
         [TestCase("Newtonsoft.Json", "12.0.3", "netstandard2.0")]
         public void CompileTimeReferencesInstallOnDependency(string id, string version, string framework)

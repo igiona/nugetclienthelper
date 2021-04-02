@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <AssemblyVersion>0.3.0</AssemblyVersion>
+    <AssemblyVersion>0.3.1</AssemblyVersion>
     <Version>$(AssemblyVersion)</Version> <!-- If repacked, it might be required to set this as the NuGet SDK. -->
   </PropertyGroup>
 
@@ -15,6 +15,7 @@
               Microsoft.TestPlatform.TestHost
                 which depends on NuGet.Frameworks
     -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" /> 
+    <PackageReference Include="NuGet.Frameworks" Version="5.8.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" /> 
   </ItemGroup>
 </Project>

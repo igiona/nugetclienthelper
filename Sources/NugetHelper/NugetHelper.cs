@@ -372,8 +372,8 @@ namespace NugetHelper
             var frameworkReducer = new FrameworkReducer();
             Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
                 { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
+                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             foreach (var get in getter)
@@ -395,8 +395,8 @@ namespace NugetHelper
             var frameworkReducer = new FrameworkReducer();
             Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
                 { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
+                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             NuGetFramework nearest = null;
