@@ -26,8 +26,15 @@ namespace NugetHelper
             {
                 throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, MinVersion));
             }
-            Source = new Uri(System.Environment.ExpandEnvironmentVariables(source));
-            
+            var uriString = System.Environment.ExpandEnvironmentVariables(source);
+            try
+            {
+                Source = new Uri(uriString);
+            }
+            catch (UriFormatException e)
+            {
+                throw new UriFormatException($"The source of the package {this} is invalid, the expanded value is: {uriString}");
+            }
             RootPath = packagesRoot;
 
             SetDotNetLibInformation(targetFramework, packageType);

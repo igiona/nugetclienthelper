@@ -366,5 +366,15 @@ namespace NugetHelper.Test
             //Should not fail because the dependency check is inhibited. 
             NugetHelper.CheckPackagesConsistency(packages, false, true);
         }
+
+
+        [Test]
+        public void CheckPackageLibraryContent()
+        {
+            var p = new NugetPackage("Unity", "4.0.1", "net45", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var installed = NugetHelper.InstallPackages(new[] { p }, false, null).First();
+
+            Assert.AreEqual(6, installed.Libraries.Count());
+        }
     }
 }
