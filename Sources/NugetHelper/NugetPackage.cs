@@ -14,6 +14,11 @@ namespace NugetHelper
         public const string DotNetImplementationAssemblyPath = "lib";
 
         public NugetPackage(string id, string version, string targetFramework, string source, string var, NugetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
+            : this (id, version, targetFramework, source, null, var, packageType, packagesRoot, dependeciesForceMinVersion)
+        {
+        }
+
+        public NugetPackage(string id, string version, string targetFramework, string source, string[] dependenciesSources, string var, NugetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
         {
             Dependencies = new List<NugetDependency>();
             Libraries = new List<string>();
@@ -26,14 +31,15 @@ namespace NugetHelper
             {
                 throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, MinVersion));
             }
-            var uriString = System.Environment.ExpandEnvironmentVariables(source);
-            try
+            Source = TryGetUri(source);
+
+            DependencySources = new List<Uri>();
+            if (dependenciesSources != null)
             {
-                Source = new Uri(uriString);
-            }
-            catch (UriFormatException e)
-            {
-                throw new UriFormatException($"The source of the package {this} is invalid, the expanded value is: {uriString}");
+                foreach (var src in dependenciesSources)
+                {
+                    DependencySources.Add(TryGetUri(src));
+                }
             }
             RootPath = packagesRoot;
 
@@ -70,6 +76,8 @@ namespace NugetHelper
         public bool CompileTimeTarget { get; private set; }
 
         public Uri Source { get; private set; }
+
+        public List<Uri> DependencySources { get; private set; }
 
         public List<string> EnvironmentVariableKeys { get; private set; }
 
@@ -171,6 +179,47 @@ namespace NugetHelper
             return !(lhs == rhs);
         }
 
+        /// <summary>
+        /// Loads in the <see cref="Libraries"/> property all the files present in the FullPath.
+        /// </summary>
+        /// <exception cref="Exceptions.InvalidAssemblyPathException">Thrown when the FullPath doesn't exists, or cannot be resolved (e.g. Any framework)</exception>
+        public void LoadLibraries()
+        {
+            var validFullPath = true;
+            if (!Directory.Exists(FullPath))
+            {
+                validFullPath = false;
+                if (NuGet.Frameworks.NuGetFramework.ParseFolder(TargetFramework) == NuGet.Frameworks.NuGetFramework.AnyFramework)
+                {
+                    //In case of Any framework, try to exclude the framework name from the path
+                    FullPath = Path.GetDirectoryName(FullPath);
+                    validFullPath = Directory.Exists(FullPath);
+                }
+            }
+
+            if (validFullPath)
+            {
+                AddLibraries(Directory.GetFiles(FullPath));
+            }
+            else
+            {
+                throw new Exceptions.InvalidAssemblyPathException($"The installed package {this} has an invalid library path {FullPath}");
+            }
+        }
+
+        private Uri TryGetUri(string uriString)
+        {
+            var expandedString = System.Environment.ExpandEnvironmentVariables(uriString).Trim();
+            try
+            {
+                return new Uri(expandedString);
+            }
+            catch (UriFormatException)
+            {
+                throw new UriFormatException($"The specified URL of the package {this} is invalid, the expanded value is: {expandedString}");
+            }
+        }
+
         private void SetDotNetLibInformation(string targetFramework, NugetPackageType t)
         {
             PackageType = t;
@@ -202,34 +251,6 @@ namespace NugetHelper
                 {
                     FullPath = Path.Combine(FullPath, TargetFramework);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Loads in the <see cref="Libraries"/> property all the files present in the FullPath.
-        /// </summary>
-        /// <exception cref="Exceptions.InvalidAssemblyPathException">Thrown when the FullPath doesn't exists, or cannot be resolved (e.g. Any framework)</exception>
-        public void LoadLibraries()
-        {
-            var validFullPath = true;
-            if (!Directory.Exists(FullPath))
-            {
-                validFullPath = false;
-                if (NuGet.Frameworks.NuGetFramework.ParseFolder(TargetFramework) == NuGet.Frameworks.NuGetFramework.AnyFramework)
-                {
-                    //In case of Any framework, try to exclude the framework name from the path
-                    FullPath = Path.GetDirectoryName(FullPath);
-                    validFullPath = Directory.Exists(FullPath);
-                }
-            }
-
-            if (validFullPath)
-            {
-                AddLibraries(Directory.GetFiles(FullPath));
-            }
-            else
-            {
-                throw new Exceptions.InvalidAssemblyPathException($"The installed package {this} has an invalid library path {FullPath}");
             }
         }
     }

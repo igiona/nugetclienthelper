@@ -454,6 +454,10 @@ namespace NugetHelper
             {
                 repositories.Add(Repository.CreateSource(providers, new PackageSource(requestedPackage.Source.ToString())));
             }
+            foreach (var depSource in requestedPackage.DependencySources)
+            {
+                repositories.Add(Repository.CreateSource(providers, new PackageSource(depSource.ToString())));
+            }
             repositories.AddRange(sourceRepositoryProvider.GetRepositories());
 
             using (var cacheContext = new SourceCacheContext())
