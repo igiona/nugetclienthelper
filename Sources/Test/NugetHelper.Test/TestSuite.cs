@@ -9,6 +9,15 @@ namespace NugetHelper.Test
     /// <summary>
     /// In all test cases, never use a NuGet package that is in use in this solution!
     /// It will be possibly create issues because of the instantiated environment variables.
+    /// 
+    /// Test packages
+    /// 
+    /// TestLib1 => CoreLib >= 0.0.1
+    /// TestLib2 => CoreLib >= 0.0.2
+    /// TestLib3 => CoreLib >= 1.0.0
+    /// 
+    /// TestVersionConflict;1.0.0 as a dependency to System.Management.Automation.dll;10.0.10586
+    /// System.Management.Automation.dll;10.0.10586 doesn't exist, the version on NuGet.og is actually 10.0.10586.0
     /// </summary>
     [TestFixture]
     public class TestSuite
@@ -66,6 +75,11 @@ namespace NugetHelper.Test
         private string GetLocalTestRepository()
         {
             return Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName, "TestPackages");
+        }
+
+        private string GetLocalTestLibOnlyRepository()
+        {
+            return Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName, "TestLibOnlyPackages");
         }
 
         private string GetOutPath(string sub)
@@ -127,7 +141,7 @@ namespace NugetHelper.Test
         public void CheckFramework()
         {
             var p = new NugetPackage("Unity.Container", "5.11.10", "net472", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
-            var ex = Assert.Throws<Exception>(() => NugetHelper.InstallPackages(new[] { p }, false, null));
+            var ex = Assert.Throws<Exceptions.PackageInstallationException>(() => NugetHelper.InstallPackages(new[] { p }, false, null));
             Assert.IsInstanceOf<Exceptions.TargetFrameworkNotFoundException>(ex.InnerException.InnerException);
         }
 
@@ -168,11 +182,6 @@ namespace NugetHelper.Test
 
             Assert.Throws<Exceptions.MultiplePackagesFoundException>(() => NugetHelper.CheckPackagesConsistency(packages));
 
-            /*
-             * TestLib1 => CoreLib >= 0.0.1
-             * TestLib2 => CoreLib >= 0.0.2
-             * TestLib3 => CoreLib >= 1.0.0
-             */
             packages.Clear();
             packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
             packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
@@ -260,9 +269,6 @@ namespace NugetHelper.Test
         }
 
         /// <summary>
-        /// TestVersionConflict;1.0.0 as a dependency to System.Management.Automation.dll;10.0.10586
-        /// System.Management.Automation.dll;10.0.10586 doesn't exist, the version on NuGet.og is actually 10.0.10586.0
-        /// 
         /// Check that the consistency-check works, since the package version 10.0.10586 is in fact equal as the package 10.0.10586.0 
         /// </summary>
         [Test]
@@ -375,6 +381,41 @@ namespace NugetHelper.Test
             var installed = NugetHelper.InstallPackages(new[] { p }, false, null).First();
 
             Assert.AreEqual(6, installed.Libraries.Count());
+        }
+
+        [Test]
+        public void CheckAdditionalDependencySources()
+        {
+            var packages = new List<NugetPackage>();
+
+            packages.Clear();
+            packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestLibOnlyRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+
+            //Should fail due to the missing dependency package in the repository
+            var ex = Assert.Throws<Exceptions.PackageInstallationException>(() => NugetHelper.InstallPackages(packages, true, null));
+            Assert.IsInstanceOf<Exceptions.DependencyNotFoundException>(ex.InnerException.InnerException);
+
+            //This should work withouth excpetions
+            packages.Clear();
+            packages.Add(new NugetPackage("TestLib1", "1.0.0", "netstandard2.0", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            NugetHelper.InstallPackages(packages, true, null).ToList();
+        }
+
+        [Test]
+        public void CheckDependencyConfusion()
+        {
+            var packages = new List<NugetPackage>();
+            packages.Clear();
+            packages.Add(new NugetPackage("CoreLib", "0.0.1", "netstandard2.0", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            try
+            {
+                //Should fail becauese CoreLib is found in one of the dependency repos, not in the source one.
+                NugetHelper.InstallPackages(packages, true, null).ToList();
+            }
+            catch (Exceptions.PackageInstallationException e)
+            {
+                Assert.AreEqual(typeof(Exceptions.DependencyConfusionException), e.InnerException.InnerException.GetType(), "DependencyNotFoundException not found in test call.");
+            }
         }
     }
 }
