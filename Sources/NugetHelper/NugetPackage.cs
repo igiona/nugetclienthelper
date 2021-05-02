@@ -75,7 +75,7 @@ namespace NugetHelper
 
         public bool CompileTimeTarget { get; private set; }
 
-        public Uri Source { get; private set; }
+        public Uri Source { get; set; }
 
         public List<Uri> DependencySources { get; private set; }
 
