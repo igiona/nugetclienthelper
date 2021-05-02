@@ -149,7 +149,7 @@ namespace NugetHelper
                         var dependecyFoundInList = packages.Where(x => x.Id == d.PackageDependency.Id);
                         if (dependecyFoundInList.Count() == 0)
                         {
-                            ThrowException<Exceptions.DependencyNotFoundException>(new[] { d.PackageDependency }, $"The dependency {d} of the packet with id {p.Id} is not present.");
+                            throw new Exceptions.DependencyNotFoundException(d, p);
                         }
                         else if (dependecyFoundInList.Count() > 1)
                         {
@@ -221,7 +221,7 @@ namespace NugetHelper
             th.Join();
             if (threadEx != null)
             {
-                throw new Exception(string.Format("Unable to install package {0} or one of its dependencies. See inner exception for more details", requestedPackage.ToString()), threadEx);
+                throw new Exceptions.PackageInstallationException(requestedPackage, threadEx);
             }
         }
 
@@ -552,12 +552,11 @@ namespace NugetHelper
             {
                 if (availablePackages.Count() == 0) //The missing package is the parent one
                 {
-                    throw new Exception(string.Format("Package {0} V{1} not found in any of the provided repositories: {2}. See the log for more error details.", package.Id, package.Version, String.Join(", ", repositories)));
+                    throw new Exceptions.PackageNotFoundException(package, repositories);
                 }
                 else
                 {
-                    var parent = availablePackages.First();
-                    throw new Exception(string.Format("Package {0} V{1} dependency of {2} V{3} not found in any of the provided repositories: {4}. See the log for more error details.", package.Id, package.Version, parent.Id, parent.Version, String.Join(", ", repositories)));
+                    throw new Exceptions.DependencyNotFoundException(package, availablePackages.First(), repositories);
                 }
             }
         }
