@@ -22,7 +22,7 @@ jobs:
     - name: Create solution
       run: slnlauncher -q -u- -o- -b . NugetHelper.slnx
     - name: Import environment variables
-      run: call SetEnvVars.bat
+      run: .\SetEnvVars.ps1
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
