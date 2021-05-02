@@ -21,11 +21,15 @@ jobs:
       run: choco install slnlauncher
     - name: Create solution
       run: slnlauncher -q -u- -o- -b . NugetHelper.slnx
-    - name: Import environment variables
-      run: .\SetEnvVars.ps1
     - name: Restore dependencies
-      run: dotnet restore
+      run: |
+        .\SetEnvVars.ps1
+        dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: |
+        .\SetEnvVars.ps1
+        dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: |
+        .\SetEnvVars.ps1
+        dotnet test --no-build --verbosity normal

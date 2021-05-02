@@ -1,5 +1,5 @@
 [System.IO.File]::ReadLines((Resolve-Path ".\SetEnvVars.bat").Path) | ForEach-Object {
-       $ar = $_.Split(" =")
+       $ar = $_.Split(" =".ToCharArray())
        $key=$ar[1]
        $val=$ar[2]
        if ($key -and $val) {
