@@ -10,6 +10,7 @@
             <tags>.NET c# NuGet client API</tags>
             <requireLicenseAcceptance>true</requireLicenseAcceptance>
             <license type="expression">MIT</license>
+            <repository type="git" url="https://github.com/igiona/nugethelper" />
         </info>
     </nuget>   
     <env name="NUGET_ORG_URL">https://api.nuget.org/v3/index.json</env>
