@@ -6,7 +6,7 @@
         <info>
             <description>.NET Helper for the NuGet client API</description>
             <authors>Giona Imperatori</authors>
-            <projectUrl>https://git.immo-electronics.ch/giona.imperatori/nugethelper</projectUrl>
+            <projectUrl>https://github.com/igiona/nugethelper</projectUrl>
             <tags>.NET c# NuGet client API</tags>
             <requireLicenseAcceptance>true</requireLicenseAcceptance>
             <license type="expression">MIT</license>
