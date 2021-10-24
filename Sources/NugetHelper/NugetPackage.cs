@@ -22,14 +22,12 @@ namespace NuGetClientHelper
         {
             Dependencies = new List<NugetDependency>();
             Libraries = new List<string>();
-            Id = id;
-            VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
-            MinVersion = VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+            Identity = new NugetPackageIdentity(id, version);
             DependenciesForceMinVersion = dependeciesForceMinVersion;
             
             if (string.IsNullOrEmpty(source))
             {
-                throw new Exception(string.Format("Invalid source for the package id {0};{1}. The source parameter is mandatory.", Id, MinVersion));
+                throw new Exception($"Invalid source for the package id {Identity}. The source parameter is mandatory.");
             }
             Source = TryGetUri(source);
 
@@ -46,14 +44,14 @@ namespace NuGetClientHelper
             SetDotNetLibInformation(targetFramework, packageType);
 
             EnvironmentVariableKeys = new List<string>();
-            EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Id));
-            EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Id));
-            EnvironmentVariableKeys.Add(GetFrameworkEnvironmentVariableKey(Id));
+            EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Identity.Id));
+            EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Identity.Id));
+            EnvironmentVariableKeys.Add(GetFrameworkEnvironmentVariableKey(Identity.Id));
 
             //Alaways set the "default" key value
-            Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Id), FullPath);
-            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Id), MinVersion);
-            Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Id), TargetFramework);
+            Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Identity.Id), FullPath);
+            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Identity.Id), Identity.MinVersion);
+            Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Identity.Id), TargetFramework);
 
             if (!string.IsNullOrEmpty(var)) //If requested, set also the user specified value
             {
@@ -63,13 +61,9 @@ namespace NuGetClientHelper
             }
         }
 
-        public string Id { get; private set; }
-
-        public string MinVersion { get; private set; }
-        
+        public NugetPackageIdentity Identity { get; private set; }
+                
         public bool DependenciesForceMinVersion { get; private set; }
-
-        public NuGet.Versioning.VersionRange VersionRange { get; private set; }
 
         public string TargetFramework { get; private set; }
 
@@ -125,7 +119,7 @@ namespace NuGetClientHelper
 
         public override string ToString()
         {
-            return string.Format("{0} V{1}", Id, MinVersion);
+            return $"{Identity} {TargetFramework}";
         }
 
         public override bool Equals(object obj)
@@ -153,7 +147,7 @@ namespace NuGetClientHelper
                 return false;
             }
 
-            return (Id == p.Id) && (MinVersion == p.MinVersion);
+            return (Identity == p.Identity);
         }
 
         public static bool operator ==(NugetPackage lhs, NugetPackage rhs)
@@ -234,7 +228,7 @@ namespace NuGetClientHelper
                 TargetFramework = System.Environment.ExpandEnvironmentVariables(targetFramework);
             }
             
-            var basePath = Path.Combine(RootPath, string.Format("{0}.{1}", Id, MinVersion));
+            var basePath = Path.Combine(RootPath, $"{Identity.Id}.{Identity.MinVersion}");
 
             if (t == NugetPackageType.DotNetImplementationAssembly || t == NugetPackageType.DotNetCompileTimeAssembly)
             {

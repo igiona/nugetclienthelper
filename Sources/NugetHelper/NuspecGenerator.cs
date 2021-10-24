@@ -152,7 +152,7 @@ namespace NuGetClientHelper
             dependencies.AppendLine();
             foreach (var d in spec.Dependecies)
             {
-                dependencies.AppendFormat(string.Format(_dependencyTemplate, d.Id, d.VersionRange.OriginalString));
+                dependencies.AppendFormat(string.Format(_dependencyTemplate, d.Identity.Id, d.Identity.VersionRange.OriginalString));
                 dependencies.AppendLine();
             }
             dependencies.Append(_dependencyGroupClosing);

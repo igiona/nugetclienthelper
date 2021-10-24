@@ -135,44 +135,44 @@ namespace NuGetClientHelper
         {
             foreach (var p in packages)
             {
-                var filtered = packages.Where(x => x.Id == p.Id && x.MinVersion != p.MinVersion);
+                var filtered = packages.Where(x => x.Identity.Id == p.Identity.Id && x.Identity.MinVersion != p.Identity.MinVersion);
 
                 if (filtered.Count() != 0)
                 {
-                    ThrowException<Exceptions.MultiplePackagesFoundException>(p, filtered, $"The packet with id {p.Id} is present in multiple version.");
+                    ThrowException<Exceptions.MultiplePackagesFoundException>(p, filtered, $"The packet with id {p.Identity.Id} is present in multiple version.");
                 }
 
                 if (!ignoreDependencies)
                 {
                     foreach (var d in p.Dependencies)
                     {
-                        var dependecyFoundInList = packages.Where(x => x.Id == d.PackageDependency.Id);
+                        var dependecyFoundInList = packages.Where(x => x.Identity.Id == d.PackageDependency.Id);
                         if (dependecyFoundInList.Count() == 0)
                         {
                             throw new Exceptions.DependencyNotFoundException(d, p);
                         }
                         else if (dependecyFoundInList.Count() > 1)
                         {
-                            ThrowException<Exceptions.MultipleDependenciesFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is present multiple times.");
+                            ThrowException<Exceptions.MultipleDependenciesFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Identity.Id} is present multiple times.");
                         }
                         else
                         {
                             var dependencyCandidate = dependecyFoundInList.Single();
 
-                            if (!d.PackageDependency.VersionRange.Satisfies(dependencyCandidate.VersionRange.MinVersion))
+                            if (!d.PackageDependency.VersionRange.Satisfies(dependencyCandidate.Identity.VersionRange.MinVersion))
                             {
-                                ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} is not present in a supported version : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                ThrowException<Exceptions.InvalidDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Identity.Id} is not present in a supported version : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.Identity.VersionRange.PrettyPrint()}.");
                             }
                             else if (forceMinMatch && d.ForceMinVersion)
                             {
                                 var minVersionString = d.PackageDependency.VersionRange.ToNonSnapshotRange().MinVersion.ToString();
 
                                 if (
-                                    minVersionString.Replace(dependencyCandidate.MinVersion, "").Replace(".", "").Where(x => x != '0').Any() &&
-                                    dependencyCandidate.MinVersion.Replace(minVersionString, "").Replace(".", "").Where(x => x != '0').Any()
+                                    minVersionString.Replace(dependencyCandidate.Identity.MinVersion, "").Replace(".", "").Where(x => x != '0').Any() &&
+                                    dependencyCandidate.Identity.MinVersion.Replace(minVersionString, "").Replace(".", "").Where(x => x != '0').Any()
                                    )
                                 {
-                                    ThrowException<Exceptions.InvalidMinVersionDependencyFoundExceptio>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Id} would satisfy the needs, but forceMinMatch is set to true : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.VersionRange.PrettyPrint()}.");
+                                    ThrowException<Exceptions.InvalidMinVersionDependencyFoundException>(dependecyFoundInList, $"The dependency {d} of the packet with id {p.Identity.Id} would satisfy the needs, but forceMinMatch is set to true : {d.PackageDependency.VersionRange.PrettyPrint()} vs {dependencyCandidate.Identity.VersionRange.PrettyPrint()}.");
                                 }
                             }
                         }
@@ -194,7 +194,7 @@ namespace NuGetClientHelper
                 {
                     extraMsg = " and its dependencies";
                 }
-                installedProgress?.Invoke($"Installed: {p.Id}, Version: {p.MinVersion}{extraMsg}");
+                installedProgress?.Invoke($"Installed: {p.Identity}{extraMsg}");
             }
             return installed;
         }
@@ -279,9 +279,9 @@ namespace NuGetClientHelper
             var packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, _logger), _logger);
 
             //Check if the package was previousely installed in this session
-            var knownPackage = installedPackages.Where((x) => x.Id == packageToInstall.Id).FirstOrDefault();
+            var knownPackage = installedPackages.Where((x) => x.Identity.Id == packageToInstall.Id).FirstOrDefault();
             var packageToInstallVersionRange = VersionRange.Parse(packageToInstall.Version.OriginalVersion);
-            if (knownPackage == null || !packageToInstallVersionRange.Satisfies(knownPackage.VersionRange.MinVersion))
+            if (knownPackage == null || !packageToInstallVersionRange.Satisfies(knownPackage.Identity.VersionRange.MinVersion))
             {
                 PackageReaderBase packageReader;
                 //Check if the package is already installed in the file system
@@ -313,7 +313,7 @@ namespace NuGetClientHelper
                 }
 
                 NugetPackage newlyInstalled = null;
-                if (requestedPackage.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
+                if (requestedPackage.Identity.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
                 {
                     var nearest = GetNearestFramework(packageReader, nuGetFramework);
 
@@ -353,7 +353,7 @@ namespace NuGetClientHelper
                         //Possible Dependency Confusion attack
                         throw new Exceptions.DependencyConfusionException($"The requested package has been found in {packageToInstall.Source.PackageSource.Source} instead of the required URI {requestedPackage.Source.AbsoluteUri}. Update the pakcage source if this is intended");
                     }
-                    newlyInstalled = new NugetPackage(requestedPackage.Id, requestedPackage.VersionRange.OriginalString,
+                    newlyInstalled = new NugetPackage(requestedPackage.Identity.Id, requestedPackage.Identity.VersionRange.OriginalString,
                                     requestedPackage.TargetFramework,
                                     requestedPackage.Source.AbsoluteUri,
                                     null, packageType, requestedPackage.RootPath, requestedPackage.DependenciesForceMinVersion);
@@ -443,8 +443,8 @@ namespace NuGetClientHelper
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-            var packageId = requestedPackage.Id;
-            var packageVersion = requestedPackage.VersionRange.MinVersion;
+            var packageId = requestedPackage.Identity.Id;
+            var packageVersion = requestedPackage.Identity.VersionRange.MinVersion;
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
             var settings = Settings.LoadDefaultSettings(root: requestedPackage.RootPath);
             var providers = Repository.Provider.GetCoreV3();
@@ -537,8 +537,8 @@ namespace NuGetClientHelper
                     resolveDependencyLevels--;
                     foreach (var dependency in dependencyInfo.Dependencies)
                     {
-                        var knownPackage = installedPackages.Where((x) => x.Id == dependency.Id).FirstOrDefault();
-                        if (knownPackage == null || !dependency.VersionRange.Satisfies(knownPackage.VersionRange.MinVersion))
+                        var knownPackage = installedPackages.Where((x) => x.Identity.Id == dependency.Id).FirstOrDefault();
+                        if (knownPackage == null || !dependency.VersionRange.Satisfies(knownPackage.Identity.VersionRange.MinVersion))
                         {
                             await GetPackageDependencyInfo(resolveDependencyLevels,
                             new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion),

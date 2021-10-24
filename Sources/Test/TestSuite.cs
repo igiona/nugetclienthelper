@@ -221,7 +221,7 @@ namespace NuGetClientHelper.Test
             NugetHelper.CheckPackagesConsistency(packages);
 
             //With the flag set to true, this thest should now fail, because the exact min version 0.0.2 is missing
-            Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundExceptio>(() => NugetHelper.CheckPackagesConsistency(packages, true));
+            Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundException>(() => NugetHelper.CheckPackagesConsistency(packages, true));
 
             packages.Clear();
             packages.Add(new NugetPackage("TestLib2", "1.0.0", "netstandard2.0", GetLocalTestRepository(), null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath(), false));
@@ -326,13 +326,13 @@ namespace NuGetClientHelper.Test
             packages.Add(new NugetPackage("System.Resources.Extensions", "5.0.0", "net461", "https://api.nuget.org/v3/index.json", null, NugetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
             packages = NugetHelper.InstallPackages(packages, true, null).ToList();
 
-            Assert.IsTrue(packages.Any(x => x.Id == "System.Memory"));
-            Assert.IsTrue(packages.Any(x => x.Id == "System.Buffers"));
-            Assert.IsTrue(packages.Any(x => x.Id == "System.Numerics.Vectors"));
-            Assert.IsTrue(packages.Any(x => x.Id == "System.Runtime.CompilerServices.Unsafe"));
+            Assert.IsTrue(packages.Any(x => x.Identity.Id == "System.Memory"));
+            Assert.IsTrue(packages.Any(x => x.Identity.Id == "System.Buffers"));
+            Assert.IsTrue(packages.Any(x => x.Identity.Id == "System.Numerics.Vectors"));
+            Assert.IsTrue(packages.Any(x => x.Identity.Id == "System.Runtime.CompilerServices.Unsafe"));
 
-            Assert.IsTrue(packages.Where(x => x.Id == "System.Numerics.Vectors").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
-            Assert.IsTrue(packages.Where(x => x.Id == "System.Runtime.CompilerServices.Unsafe").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(packages.Where(x => x.Identity.Id == "System.Numerics.Vectors").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(packages.Where(x => x.Identity.Id == "System.Runtime.CompilerServices.Unsafe").First().PackageType == NugetPackageType.DotNetImplementationAssembly);
 
             NugetHelper.CheckPackagesConsistency(packages);
         }
