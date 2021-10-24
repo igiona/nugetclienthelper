@@ -2,6 +2,7 @@
   <Import Project="nuget.debug" Condition="Exists('nuget.debug')" />
   <PropertyGroup>
     <TargetFramework>net5</TargetFramework>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(NuGetClientHelper)\NuGetClientHelper.csproj" />
