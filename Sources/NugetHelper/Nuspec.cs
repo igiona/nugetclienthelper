@@ -46,7 +46,7 @@ namespace NuGetClientHelper
 
         public void AddDependeciesPacket(NugetPackage p)
         {
-            var idMatch = _dependecies.Where(x => x.Id == p.Id).FirstOrDefault();
+            var idMatch = _dependecies.Where(x => x.Identity.Id == p.Identity.Id).FirstOrDefault();
 
             if (idMatch == null)
             {
@@ -54,16 +54,16 @@ namespace NuGetClientHelper
             }
             else
             {
-                if (!idMatch.VersionRange.Satisfies(p.VersionRange.MinVersion)) //The current known dependency-package does not satisfy the proposed dependency
+                if (!idMatch.Identity.VersionRange.Satisfies(p.Identity.VersionRange.MinVersion)) //The current known dependency-package does not satisfy the proposed dependency
                 {
-                    if (p.VersionRange.Satisfies(idMatch.VersionRange.MinVersion)) //The proposed dependecy satisfies the known dependency-package
+                    if (p.Identity.VersionRange.Satisfies(idMatch.Identity.VersionRange.MinVersion)) //The proposed dependecy satisfies the known dependency-package
                     {
                         _dependecies.Remove(idMatch);
                         _dependecies.Add(p);
                     }
                     else
                     {
-                        throw new Exception($"Dependecies mismatch found while creating the NuSpec of the package {Id};{Version}. The package with id {p.Id} is requested with two non-overlapping versions V={p.VersionRange.PrettyPrint()} and V={idMatch.VersionRange.PrettyPrint()}");
+                        throw new Exception($"Dependecies mismatch found while creating the NuSpec of the package {Id};{Version}. The package with id {p.Identity.Id} is requested with two non-overlapping versions V={p.Identity.VersionRange.PrettyPrint()} and V={idMatch.Identity.VersionRange.PrettyPrint()}");
                     }
                 }
             }

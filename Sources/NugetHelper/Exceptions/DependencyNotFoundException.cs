@@ -21,7 +21,7 @@ namespace NuGetClientHelper.Exceptions
         }
         public DependencyNotFoundException(NugetDependency package,
                                            NugetPackage parent)
-            : base($"The dependency {package} of the packet with id {parent.Id} is not present.")
+            : base($"The dependency {package} of the packet {parent.Identity} is not present.")
         {
         }
     }
