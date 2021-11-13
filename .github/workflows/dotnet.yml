@@ -3,6 +3,8 @@ name: .NET
 on:
   push:
     branches: [ master ]
+    tags:
+      - v*
   pull_request:
     branches: [ master ]
 
@@ -20,7 +22,7 @@ jobs:
     - name: Setup SlnLauncher
       run: choco install slnlauncher
     - name: Create solution
-      run: slnlauncher -q -u- -o- -b . NugetHelper.slnx
+      run: slnlauncher -q -u- -o- -ps . NugetHelper.slnx
     - name: Restore dependencies
       run: |
         .\SetEnvVars.ps1
@@ -33,3 +35,13 @@ jobs:
       run: |
         .\SetEnvVars.ps1
         dotnet test --no-build --verbosity normal
+    - name: Create package
+      run: |
+        mkdir artifacts
+        slnlauncher -q -u- -o- --offline -ns artifacts NugetHelper.slnx
+        nuget pack artifacts -OutputDirectory artifacts
+    - name: Archive package
+      uses: actions/upload-artifact@v2
+      with:
+        name: nuget-package
+        path: artifacts/*.nupkg
