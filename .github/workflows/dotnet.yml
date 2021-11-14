@@ -1,5 +1,6 @@
 name: .NET
-
+env:
+  SlnxName: NuGetClientHelper
 on:
   push:
     branches: [ master ]
@@ -22,7 +23,7 @@ jobs:
     - name: Setup SlnLauncher
       run: choco install slnlauncher
     - name: Create solution
-      run: slnlauncher -q -u- -o- -ps . NugetHelper.slnx
+      run: slnlauncher -q -u- -o- -ps . "$($env:SlnxName).slnx"
     - name: Restore dependencies
       run: |
         .\SetEnvVars.ps1
@@ -38,7 +39,7 @@ jobs:
     - name: Create package
       run: |
         mkdir artifacts
-        slnlauncher -q -u- -o- --offline -ns artifacts NugetHelper.slnx
+        slnlauncher -q -u- -o- --offline -ns artifacts "$($env:SlnxName).slnx"
         nuget pack artifacts -OutputDirectory artifacts
     - name: Archive package
       uses: actions/upload-artifact@v2

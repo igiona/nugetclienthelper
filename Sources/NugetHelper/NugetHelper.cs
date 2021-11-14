@@ -16,7 +16,7 @@ using System.IO;
 using NuGet.Packaging;
 using NuGet.Packaging.Signing;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
     public static class NugetHelper
     {

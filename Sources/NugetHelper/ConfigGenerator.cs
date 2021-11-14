@@ -4,7 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
     public class ConfigGenerator
     {

@@ -4,6 +4,6 @@
     <TargetFramework>net5</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(NugetHelper)\NugetHelper.csproj" />
+    <ProjectReference Include="$(NuGetClientHelper)\NuGetClientHelper.csproj" />
   </ItemGroup>
 </Project>

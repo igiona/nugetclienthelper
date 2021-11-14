@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
     public class NugetPackage
     {

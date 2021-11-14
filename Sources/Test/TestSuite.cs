@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 
-namespace NugetHelper.Test
+namespace NuGetClientHelper.Test
 {
     /// <summary>
     /// In all test cases, never use a NuGet package that is in use in this solution!
