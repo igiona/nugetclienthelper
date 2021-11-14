@@ -6,11 +6,11 @@
         <info>
             <description>.NET Helper for the NuGet client API</description>
             <authors>Giona Imperatori</authors>
-            <projectUrl>https://github.com/igiona/nugethelper</projectUrl>
+            <projectUrl>https://github.com/igiona/nugetclienthelper</projectUrl>
             <tags>.NET c# NuGet client API</tags>
             <requireLicenseAcceptance>true</requireLicenseAcceptance>
             <license type="expression">MIT</license>
-            <repository type="git" url="https://github.com/igiona/nugethelper" />
+            <repository type="git" url="https://github.com/igiona/nugetclienthelper" />
         </info>
     </nuget>   
     <env name="NUGET_ORG_URL">https://api.nuget.org/v3/index.json</env>
@@ -26,6 +26,6 @@
     <package id="NuGet.Versioning" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
 
     <!-- Projects -->    
-    <project name="NugetHelper" />
-    <project name="NugetHelper.Test" packable="false" />
+    <project name="NuGetClientHelper" />
+    <project name="NuGetClientHelper.Test" packable="false" />
 </SlnX>

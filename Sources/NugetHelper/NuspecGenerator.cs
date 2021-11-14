@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using NuGet.Frameworks;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
 
     public class NuspecGenerator

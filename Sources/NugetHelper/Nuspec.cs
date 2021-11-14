@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
     public class Nuspec
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace NugetHelper.Exceptions
+namespace NuGetClientHelper.Exceptions
 {
     public class InvalidAssemblyPathException : Exception
     {

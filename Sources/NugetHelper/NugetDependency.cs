@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace NugetHelper
+namespace NuGetClientHelper
 {
     public class NugetDependency
     { 
