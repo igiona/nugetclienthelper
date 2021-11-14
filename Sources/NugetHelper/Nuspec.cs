@@ -9,7 +9,7 @@ namespace NuGetClientHelper
     public class Nuspec
     {
         Dictionary<string, List<string>> _files = new Dictionary<string, List<string>>();
-        List<NugetPackage> _dependecies = new List<NugetPackage>();
+        List<NuGetPackage> _dependecies = new List<NuGetPackage>();
         public Nuspec(string id, string version, string readmeFile, string additionalElements)
         {
             Id = id;
@@ -30,7 +30,7 @@ namespace NuGetClientHelper
 
         public ReadOnlyDictionary<string, List<string>> Elements { get { return new ReadOnlyDictionary<string, List<string>>(_files); } }
         
-        public ReadOnlyCollection<NugetPackage> Dependecies { get { return _dependecies.AsReadOnly(); } }
+        public ReadOnlyCollection<NuGetPackage> Dependecies { get { return _dependecies.AsReadOnly(); } }
 
         public void AddLibraryElements(string framework, string file)
         {
@@ -44,7 +44,7 @@ namespace NuGetClientHelper
             }
         }
 
-        public void AddDependeciesPacket(NugetPackage p)
+        public void AddDependeciesPacket(NuGetPackage p)
         {
             var idMatch = _dependecies.Where(x => x.Identity.Id == p.Identity.Id).FirstOrDefault();
 

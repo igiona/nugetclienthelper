@@ -7,22 +7,22 @@ using System.Threading.Tasks;
 
 namespace NuGetClientHelper
 {
-    public class NugetPackage
+    public class NuGetPackage
     {
         public const string DotNetCompileTimeAssemblyPath = "ref";
 
         public const string DotNetImplementationAssemblyPath = "lib";
 
-        public NugetPackage(string id, string version, string targetFramework, string source, string var, NugetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
+        public NuGetPackage(string id, string version, string targetFramework, string source, string var, NuGetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
             : this (id, version, targetFramework, source, null, var, packageType, packagesRoot, dependeciesForceMinVersion)
         {
         }
 
-        public NugetPackage(string id, string version, string targetFramework, string source, string[] dependenciesSources, string var, NugetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
+        public NuGetPackage(string id, string version, string targetFramework, string source, string[] dependenciesSources, string var, NuGetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
         {
-            Dependencies = new List<NugetDependency>();
+            Dependencies = new List<NuGetDependency>();
             Libraries = new List<string>();
-            Identity = new NugetPackageIdentity(id, version);
+            Identity = new NuGetPackageIdentity(id, version);
             DependenciesForceMinVersion = dependeciesForceMinVersion;
             
             if (string.IsNullOrEmpty(source))
@@ -61,7 +61,7 @@ namespace NuGetClientHelper
             }
         }
 
-        public NugetPackageIdentity Identity { get; private set; }
+        public NuGetPackageIdentity Identity { get; private set; }
                 
         public bool DependenciesForceMinVersion { get; private set; }
 
@@ -81,9 +81,9 @@ namespace NuGetClientHelper
 
         public string FullPath { get; private set; }
 
-        public NugetPackageType PackageType { get; private set; }
+        public NuGetPackageType PackageType { get; private set; }
         
-        public List<NugetDependency> Dependencies { get; private set; }
+        public List<NuGetDependency> Dependencies { get; private set; }
 
         public List<string> Libraries { get; private set; }
 
@@ -109,7 +109,7 @@ namespace NuGetClientHelper
 
         public void AddDependencies(IEnumerable<NuGet.Packaging.Core.PackageDependency> dependencies)
         {
-            Dependencies.AddRange(dependencies.Select(x => new NugetDependency(x, DependenciesForceMinVersion)));
+            Dependencies.AddRange(dependencies.Select(x => new NuGetDependency(x, DependenciesForceMinVersion)));
         }
 
         public void AddLibraries(IEnumerable<string> libraries)
@@ -124,10 +124,10 @@ namespace NuGetClientHelper
 
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as NugetPackage);
+            return this.Equals(obj as NuGetPackage);
         }
 
-        public bool Equals(NugetPackage p)
+        public bool Equals(NuGetPackage p)
         {
             // If parameter is null, return false.
             if (Object.ReferenceEquals(p, null))
@@ -150,7 +150,7 @@ namespace NuGetClientHelper
             return (Identity == p.Identity);
         }
 
-        public static bool operator ==(NugetPackage lhs, NugetPackage rhs)
+        public static bool operator ==(NuGetPackage lhs, NuGetPackage rhs)
         {
             // Check for null on left side.
             if (Object.ReferenceEquals(lhs, null))
@@ -168,7 +168,7 @@ namespace NuGetClientHelper
             return lhs.Equals(rhs);
         }
 
-        public static bool operator !=(NugetPackage lhs, NugetPackage rhs)
+        public static bool operator !=(NuGetPackage lhs, NuGetPackage rhs)
         {
             return !(lhs == rhs);
         }
@@ -214,13 +214,13 @@ namespace NuGetClientHelper
             }
         }
 
-        private void SetDotNetLibInformation(string targetFramework, NugetPackageType t)
+        private void SetDotNetLibInformation(string targetFramework, NuGetPackageType t)
         {
             PackageType = t;
             TargetFramework = "";
-            var assemblyFolderDict = new Dictionary<NugetPackageType, string>() {
-                { NugetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
-                { NugetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
+            var assemblyFolderDict = new Dictionary<NuGetPackageType, string>() {
+                { NuGetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
+                { NuGetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
             };
 
             if (!string.IsNullOrEmpty(targetFramework))
@@ -230,7 +230,7 @@ namespace NuGetClientHelper
             
             var basePath = Path.Combine(RootPath, $"{Identity.Id}.{Identity.MinVersion}");
 
-            if (t == NugetPackageType.DotNetImplementationAssembly || t == NugetPackageType.DotNetCompileTimeAssembly)
+            if (t == NuGetPackageType.DotNetImplementationAssembly || t == NuGetPackageType.DotNetCompileTimeAssembly)
             {
                 if (string.IsNullOrEmpty(TargetFramework))
                 {

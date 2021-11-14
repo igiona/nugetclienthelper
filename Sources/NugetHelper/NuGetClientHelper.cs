@@ -18,9 +18,9 @@ using NuGet.Packaging.Signing;
 
 namespace NuGetClientHelper
 {
-    public static class NugetHelper
+    public static class NuGetClientHelper
     {
-        public class NugetLogger : ILogger
+        public class NuGetLogger : ILogger
         {
             public void Log(LogLevel level, string data)
             {
@@ -106,17 +106,17 @@ namespace NuGetClientHelper
             }
         }
 
-        private static ILogger _logger = new NugetLogger();
+        private static ILogger _logger = new NuGetLogger();
 
-        private static void ThrowException<T>(NugetPackage p, IEnumerable<NugetPackage> packages, string message) where T : Exception
+        private static void ThrowException<T>(NuGetPackage p, IEnumerable<NuGetPackage> packages, string message) where T : Exception
         {
-            var newPackages = new List<NugetPackage>();
+            var newPackages = new List<NuGetPackage>();
             newPackages.Add(p);
             newPackages.AddRange(packages);
             ThrowException<T>(newPackages, message);
         }
 
-        private static void ThrowException<T>(IEnumerable<NugetPackage> packages, string message) where T : Exception
+        private static void ThrowException<T>(IEnumerable<NuGetPackage> packages, string message) where T : Exception
         {
             throw (T)Activator.CreateInstance(typeof(T), string.Format("{0}\n\nAffected packages:\n{1}", message, string.Join("\n", packages)));
         }
@@ -131,7 +131,7 @@ namespace NuGetClientHelper
             _logger = logger;
         }
 
-        public static void CheckPackagesConsistency(IReadOnlyList<NugetPackage> packages, bool forceMinMatch = false, bool ignoreDependencies = false)
+        public static void CheckPackagesConsistency(IReadOnlyList<NuGetPackage> packages, bool forceMinMatch = false, bool ignoreDependencies = false)
         {
             foreach (var p in packages)
             {
@@ -181,9 +181,9 @@ namespace NuGetClientHelper
             }
         }
 
-        public static IEnumerable<NugetPackage> InstallPackages(IReadOnlyList<NugetPackage> packages, bool autoInstallDependencis, Action<string> installedProgress)
+        public static IEnumerable<NuGetPackage> InstallPackages(IReadOnlyList<NuGetPackage> packages, bool autoInstallDependencis, Action<string> installedProgress)
         {
-            var installed = new List<NugetPackage>();
+            var installed = new List<NuGetPackage>();
             foreach (var p in packages)
             {
                 //Always go through the installation method, to gather the dependency information
@@ -199,7 +199,7 @@ namespace NuGetClientHelper
             return installed;
         }
 
-        private static void InstallPackage(NugetPackage requestedPackage, bool autoInstallDependencis, List<NugetPackage> installed)
+        private static void InstallPackage(NuGetPackage requestedPackage, bool autoInstallDependencis, List<NuGetPackage> installed)
         {
             Exception threadEx = null;
 
@@ -232,7 +232,7 @@ namespace NuGetClientHelper
         /// </summary>
         /// <param name="requestedPackage"></param>
         /// <param name="destinationDirectory"></param>
-        public static void DownloadPackage(NugetPackage requestedPackage, string destinationDirectory)
+        public static void DownloadPackage(NuGetPackage requestedPackage, string destinationDirectory)
         {
             Exception threadEx = null;
 
@@ -264,11 +264,11 @@ namespace NuGetClientHelper
         /// <param name="requestedPackage"></param>
         /// <param name="installedPackages"></param>
         /// <returns></returns>
-        private static async Task InstallPackageActionAsync(NugetPackage requestedPackage,
+        private static async Task InstallPackageActionAsync(NuGetPackage requestedPackage,
                                                             SourcePackageDependencyInfo packageToInstall,
                                                             ISettings settings,
                                                             SourceCacheContext cacheContext,
-                                                            List<NugetPackage> installedPackages)
+                                                            List<NuGetPackage> installedPackages)
         {
             var packetRoot = Path.GetFullPath(requestedPackage.RootPath);
             //var packagePathResolver = new PackagePathResolver(Path.Combine(packetRoot, packageToInstall.Id, packageToInstall.Version.ToFullString()), true);
@@ -312,7 +312,7 @@ namespace NuGetClientHelper
                     packageReader = new PackageFolderReader(installedPath);
                 }
 
-                NugetPackage newlyInstalled = null;
+                NuGetPackage newlyInstalled = null;
                 if (requestedPackage.Identity.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
                 {
                     var nearest = GetNearestFramework(packageReader, nuGetFramework);
@@ -330,7 +330,7 @@ namespace NuGetClientHelper
                         }
                         catch (NuGet.Packaging.Core.PackagingException) { }
 
-                        newlyInstalled = new NugetPackage(packageToInstall.Id, version.OriginalVersion,
+                        newlyInstalled = new NuGetPackage(packageToInstall.Id, version.OriginalVersion,
                                         nearest.Item2.GetShortFolderName(),
                                         packageToInstall.Source.PackageSource.Source,
                                         null, nearest.Item1, requestedPackage.RootPath, requestedPackage.DependenciesForceMinVersion);
@@ -338,9 +338,9 @@ namespace NuGetClientHelper
                 }
                 else
                 {
-                    NugetPackageType packageType = requestedPackage.PackageType;
+                    NuGetPackageType packageType = requestedPackage.PackageType;
 
-                    if (packageType != NugetPackageType.Other)
+                    if (packageType != NuGetPackageType.Other)
                     {
                         if (!CheckFrameworkMatch(packageReader, nuGetFramework, ref packageType))
                         {
@@ -353,7 +353,7 @@ namespace NuGetClientHelper
                         //Possible Dependency Confusion attack
                         throw new Exceptions.DependencyConfusionException($"The requested package has been found in {packageToInstall.Source.PackageSource.Source} instead of the required URI {requestedPackage.Source.AbsoluteUri}. Update the pakcage source if this is intended");
                     }
-                    newlyInstalled = new NugetPackage(requestedPackage.Identity.Id, requestedPackage.Identity.VersionRange.OriginalString,
+                    newlyInstalled = new NuGetPackage(requestedPackage.Identity.Id, requestedPackage.Identity.VersionRange.OriginalString,
                                     requestedPackage.TargetFramework,
                                     requestedPackage.Source.AbsoluteUri,
                                     null, packageType, requestedPackage.RootPath, requestedPackage.DependenciesForceMinVersion);
@@ -367,13 +367,13 @@ namespace NuGetClientHelper
             }
         }
 
-        private static bool CheckFrameworkMatch(PackageReaderBase packageReader, NuGetFramework targetFramework, ref NugetPackageType type)
+        private static bool CheckFrameworkMatch(PackageReaderBase packageReader, NuGetFramework targetFramework, ref NuGetPackageType type)
         {
             var frameworkReducer = new FrameworkReducer();
-            Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
-                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
+                { NuGetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
+                { NuGetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             foreach (var get in getter)
@@ -390,13 +390,13 @@ namespace NuGetClientHelper
             return false;
         }
 
-        private static Tuple<NugetPackageType, NuGetFramework> GetNearestFramework(PackageReaderBase packageReader, NuGetFramework targetFramework)
+        private static Tuple<NuGetPackageType, NuGetFramework> GetNearestFramework(PackageReaderBase packageReader, NuGetFramework targetFramework)
         {
             var frameworkReducer = new FrameworkReducer();
-            Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NugetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NugetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NugetPackage.DotNetImplementationAssemblyPath) },
-                { NugetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NugetPackage.DotNetCompileTimeAssemblyPath) },
+                { NuGetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
+                { NuGetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             NuGetFramework nearest = null;
@@ -408,13 +408,13 @@ namespace NuGetClientHelper
                 nearest = frameworkReducer.GetNearest(targetFramework, libFrameworks);
                 if (nearest != null)
                 {
-                    return new Tuple<NugetPackageType, NuGetFramework>(get.Key, nearest);
+                    return new Tuple<NuGetPackageType, NuGetFramework>(get.Key, nearest);
                 }
             }
             return null;
         }
 
-        private static async Task DownloadPackageActionAsync(NugetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, string destinationDirectory)
+        private static async Task DownloadPackageActionAsync(NuGetPackage requestedPackage, SourcePackageDependencyInfo packageToInstall, ISettings settings, SourceCacheContext cacheContext, string destinationDirectory)
         {
             string packagePath = Path.Combine(destinationDirectory, packageToInstall.ToString());
             if (!File.Exists(packagePath))
@@ -438,7 +438,7 @@ namespace NuGetClientHelper
         /// <param name="requestedPackage"></param>
         /// <param name="autoInstallDependencis"></param>
         /// <returns></returns>
-        static async Task PerformPackageActionAsync(NugetPackage requestedPackage, bool autoInstallDependencis, List<NugetPackage> installedPackages, Func<NugetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, List<NugetPackage>, Task> action)
+        static async Task PerformPackageActionAsync(NuGetPackage requestedPackage, bool autoInstallDependencis, List<NuGetPackage> installedPackages, Func<NuGetPackage, SourcePackageDependencyInfo, ISettings, SourceCacheContext, List<NuGetPackage>, Task> action)
         {
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -502,7 +502,7 @@ namespace NuGetClientHelper
             ILogger logger,
             IEnumerable<SourceRepository> repositories,
             ISet<SourcePackageDependencyInfo> availablePackages,
-            List<NugetPackage> installedPackages)
+            List<NuGetPackage> installedPackages)
         {
             if (availablePackages.Contains(package)) return;
             var packageFound = false;

@@ -4,9 +4,9 @@ using System.Text;
 
 namespace NuGetClientHelper
 {
-    public class NugetDependency
+    public class NuGetDependency
     { 
-        public NugetDependency(NuGet.Packaging.Core.PackageDependency d, bool forceMinVersion)
+        public NuGetDependency(NuGet.Packaging.Core.PackageDependency d, bool forceMinVersion)
         {
             PackageDependency = d;
             ForceMinVersion = forceMinVersion;

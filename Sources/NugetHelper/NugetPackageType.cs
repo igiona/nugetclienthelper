@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NuGetClientHelper
 {
-    public enum NugetPackageType
+    public enum NuGetPackageType
     {
         DotNetImplementationAssembly,
         DotNetCompileTimeAssembly,

@@ -7,9 +7,9 @@ namespace NuGetClientHelper
     /// <summary>
     /// Explicitly avoid using NuGet.Packaging.Core.PackageIdentity, to have better control on the "MinVersion" checks.
     /// </summary>
-    public class NugetPackageIdentity
+    public class NuGetPackageIdentity
     {
-        public NugetPackageIdentity(string id, string version)
+        public NuGetPackageIdentity(string id, string version)
         {
             Id = id;
             VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
@@ -24,10 +24,10 @@ namespace NuGetClientHelper
 
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as NugetPackageIdentity);
+            return this.Equals(obj as NuGetPackageIdentity);
         }
 
-        public bool Equals(NugetPackageIdentity p)
+        public bool Equals(NuGetPackageIdentity p)
         {
             // If parameter is null, return false.
             if (Object.ReferenceEquals(p, null))
@@ -50,7 +50,7 @@ namespace NuGetClientHelper
             return (Id == p.Id) && (MinVersion == p.MinVersion);
         }
 
-        public static bool operator ==(NugetPackageIdentity lhs, NugetPackageIdentity rhs)
+        public static bool operator ==(NuGetPackageIdentity lhs, NuGetPackageIdentity rhs)
         {
             // Check for null on left side.
             if (Object.ReferenceEquals(lhs, null))
@@ -68,7 +68,7 @@ namespace NuGetClientHelper
             return lhs.Equals(rhs);
         }
 
-        public static bool operator !=(NugetPackageIdentity lhs, NugetPackageIdentity rhs)
+        public static bool operator !=(NuGetPackageIdentity lhs, NuGetPackageIdentity rhs)
         {
             return !(lhs == rhs);
         }

@@ -17,8 +17,8 @@ namespace NuGetClientHelper
         static readonly string _sourceTemplate = "{0}<add key=\"{1}\" value=\"{2}\" />";
         #endregion
 
-        const string NugetConfigName = "nuget.config";
-        public static void Generate(string outDir, IEnumerable<NugetPackage> packages)
+        const string NuGetConfigName = "nuget.config";
+        public static void Generate(string outDir, IEnumerable<NuGetPackage> packages)
         {
             int local = 0;
             var sources = new StringBuilder();
@@ -38,7 +38,7 @@ namespace NuGetClientHelper
             if (sources.Length > 0)
             {
                 var content = string.Format(_configTemplate, sources.ToString());
-                Utilities.WriteAllText(Path.Combine(outDir, NugetConfigName), content);
+                Utilities.WriteAllText(Path.Combine(outDir, NuGetConfigName), content);
             }
         }
 
