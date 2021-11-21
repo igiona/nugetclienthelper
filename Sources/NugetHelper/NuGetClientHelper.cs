@@ -448,7 +448,8 @@ namespace NuGetClientHelper
             var nuGetFramework = NuGetFramework.ParseFolder(requestedPackage.TargetFramework);
             var settings = Settings.LoadDefaultSettings(root: requestedPackage.RootPath);
             var providers = Repository.Provider.GetCoreV3();
-            var sourceRepositoryProvider = new SourceRepositoryProvider(settings, providers);
+            var sourceRepositoryProvider = new SourceRepositoryProvider(new PackageSourceProvider(settings), providers);
+            
             var repositories = new List<SourceRepository>();
             if (requestedPackage.Source != null)
             {
