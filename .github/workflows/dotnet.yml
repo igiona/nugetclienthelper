@@ -44,5 +44,5 @@ jobs:
     - name: Archive package
       uses: actions/upload-artifact@v2
       with:
-        name: nuget-package
+        name: ${{ env.SlnxName }}
         path: artifacts/*.nupkg
