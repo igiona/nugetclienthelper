@@ -9,15 +9,24 @@ namespace NuGetClientHelper
     /// </summary>
     public class NuGetPackageIdentity
     {
+        private readonly int _hashCode;
+        
         public NuGetPackageIdentity(string id, string version)
         {
             Id = id;
             VersionRange = NuGet.Versioning.VersionRange.Parse(System.Environment.ExpandEnvironmentVariables(version));
             MinVersion = VersionRange.ToNonSnapshotRange().MinVersion.ToString();
+
+            unchecked
+            {
+                var hashCode = Id.ToUpper().GetHashCode();
+                hashCode = (hashCode * 397) ^ VersionRange.GetHashCode();
+                hashCode = (hashCode * 397) ^ MinVersion.GetHashCode();
+                _hashCode = hashCode;
+            }
         }
 
         public string Id { get; private set; }
-
         public string MinVersion { get; private set; }
         
         public NuGet.Versioning.VersionRange VersionRange { get; private set; }
@@ -76,6 +85,11 @@ namespace NuGetClientHelper
         public override string ToString()
         {
             return $"{Id} V{MinVersion}";
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
         }
     }
 }
