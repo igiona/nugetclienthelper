@@ -88,8 +88,13 @@ namespace NuGetClientHelper
             */
 
             var frameworkReducer = new FrameworkReducer();
+            if (spec.Elements.Count == 0)
+            {
+                throw new Exception($"For the required package {spec.Id} there are no file elements defined in the nuspec.");
+            }
             var highestFramework = frameworkReducer.ReduceUpwards(spec.Elements.Select(x => NuGetFramework.Parse(x.Key))).ToList();
-            if (highestFramework.Count != 1)
+
+            if (highestFramework.Count > 1)
             {
                 var required = string.Join(Environment.NewLine, highestFramework);
                 throw new Exception($"For the required package {spec.Id} multiple .NET frameworks would be necessary. This is probably caused by a mixture of '.NET Framework' and '.NET Core' based projects.\nThis is not supported.\nRequired frameworks: {required}");
