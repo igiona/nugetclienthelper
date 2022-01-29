@@ -13,75 +13,93 @@ namespace NuGetClientHelper
 
         public const string DotNetImplementationAssemblyPath = "lib";
 
-        public NuGetPackage(string id, string version, string targetFramework, string source, string var, NuGetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
-            : this (id, version, targetFramework, source, null, var, packageType, packagesRoot, dependeciesForceMinVersion)
-        {
-        }
+        private readonly Dictionary<NuGetPackageType, string> AssemblyFolderDictionary = new Dictionary<NuGetPackageType, string>() {
+            { NuGetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
+            { NuGetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
+        };
+        private readonly int _hashCode;
+        private readonly NuGetPackageInfo _info;
 
-        public NuGetPackage(string id, string version, string targetFramework, string source, string[] dependenciesSources, string var, NuGetPackageType packageType, string packagesRoot, bool dependeciesForceMinVersion = true)
+        public NuGetPackage(NuGetPackageInfo info, string targetFramework)
         {
             Dependencies = new List<NuGetDependency>();
             Libraries = new List<string>();
-            Identity = new NuGetPackageIdentity(id, version);
-            DependenciesForceMinVersion = dependeciesForceMinVersion;
-            
-            if (string.IsNullOrEmpty(source))
-            {
-                throw new Exception($"Invalid source for the package id {Identity}. The source parameter is mandatory.");
-            }
-            Source = TryGetUri(source);
+            _info = info;
 
-            DependencySources = new List<Uri>();
-            if (dependenciesSources != null)
+            TargetFramework = string.IsNullOrEmpty(targetFramework) ? "" : System.Environment.ExpandEnvironmentVariables(targetFramework);
+
+            if (PackageType != NuGetPackageType.Other)
             {
-                foreach (var src in dependenciesSources)
+                SetDotNetLibInformation(targetFramework);
+            }
+            else //Ignore the TargetFramework and eventually use the CustomContentPath value
+            {
+                FullPath = PackageRootPath;
+                if (!string.IsNullOrEmpty(_info.CustomContentPath))
                 {
-                    DependencySources.Add(TryGetUri(src));
+                    FullPath = Path.Combine(FullPath, _info.CustomContentPath);
                 }
             }
-            RootPath = packagesRoot;
-
-            SetDotNetLibInformation(targetFramework, packageType);
-
             EnvironmentVariableKeys = new List<string>();
             EnvironmentVariableKeys.Add(EscapeStringAsEnvironmentVariableAsKey(Identity.Id));
             EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Identity.Id));
             EnvironmentVariableKeys.Add(GetFrameworkEnvironmentVariableKey(Identity.Id));
 
-            //Alaways set the "default" key value
+            //Always set the "default" key value
             Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Identity.Id), FullPath);
             Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Identity.Id), Identity.MinVersion);
             Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Identity.Id), TargetFramework);
 
-            if (!string.IsNullOrEmpty(var)) //If requested, set also the user specified value
+            if (Directory.Exists(FullPath))
             {
-                EnvironmentVariableAdditionalKey = var;
-                if (Environment.GetEnvironmentVariable(EnvironmentVariableAdditionalKey) == null)
-                    Environment.SetEnvironmentVariable(EnvironmentVariableAdditionalKey, FullPath);
+                AddLibraries(Directory.GetFiles(FullPath));
+            }
+            else if (PackageType != NuGetPackageType.Other)
+            {
+                throw new Exceptions.InvalidAssemblyPathException($"Unable to load libraries. The library path of {this} doesn't exists ['{FullPath}']");
+            }
+
+            unchecked
+            {
+                var hashCode = Identity.GetHashCode();
+                hashCode = (hashCode * 397) ^ TargetFramework.GetHashCode();
+                hashCode = (hashCode * 397) ^ Source.GetHashCode();
+                _hashCode = hashCode;
             }
         }
 
-        public NuGetPackageIdentity Identity { get; private set; }
-                
-        public bool DependenciesForceMinVersion { get; private set; }
+        public NuGetPackageIdentity Identity => _info.Identity;                
+
+        public bool DependenciesForceMinVersion => _info.DependenciesForceMinVersion;
 
         public string TargetFramework { get; private set; }
 
         public bool CompileTimeTarget { get; private set; }
 
-        public Uri Source { get; set; }
+        public Uri Source => _info.Source;
 
-        public List<Uri> DependencySources { get; private set; }
+        public List<Uri> DependencySources => _info.DependencySources;
 
         public List<string> EnvironmentVariableKeys { get; private set; }
 
         public string EnvironmentVariableAdditionalKey { get; private set; }
 
-        public string RootPath { get; private set; }
+        /// <summary>
+        /// Location of the package folder. Usually a "cache" folder.
+        /// </summary>
+        public string RootPath => _info.RootPath;
 
+        /// <summary>
+        /// Path pointing to the package root, where the package content is unpacked in.
+        /// </summary>
+        public string PackageRootPath => _info.PackageRootPath;
+
+        /// <summary>
+        /// Path pointing to the folder containing the assemblies. For example: {PackageRootPath}/lib/net5
+        /// </summary>
         public string FullPath { get; private set; }
 
-        public NuGetPackageType PackageType { get; private set; }
+        public NuGetPackageType PackageType => _info.PackageType;
         
         public List<NuGetDependency> Dependencies { get; private set; }
 
@@ -173,78 +191,55 @@ namespace NuGetClientHelper
             return !(lhs == rhs);
         }
 
-        /// <summary>
-        /// Loads in the <see cref="Libraries"/> property all the files present in the FullPath.
-        /// </summary>
-        /// <exception cref="Exceptions.InvalidAssemblyPathException">Thrown when the FullPath doesn't exists, or cannot be resolved (e.g. Any framework)</exception>
-        public void LoadLibraries()
+        public override int GetHashCode()
         {
-            var validFullPath = true;
-            if (!Directory.Exists(FullPath))
-            {
-                validFullPath = false;
-                if (NuGet.Frameworks.NuGetFramework.ParseFolder(TargetFramework) == NuGet.Frameworks.NuGetFramework.AnyFramework)
+            return _hashCode;
+        }
+
+        private void SetDotNetLibInformation(string targetFramework)
+        {
+            #region Framwework spacial cases resolver
+            var frameworkResolver = new Dictionary<string, Func<string, string[]>>()
                 {
-                    //In case of Any framework, try to exclude the framework name from the path
-                    FullPath = Path.GetDirectoryName(FullPath);
-                    validFullPath = Directory.Exists(FullPath);
-                }
+                    {
+                        "Any,Version=v0.0",
+                        (framework) => new[]
+                        {
+                            Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType], framework),
+                            Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType]),
+                            PackageRootPath //This is assumed to always exists!                          
+                        }
+                    },
+                    {
+                        ".NETPortable,Version=v0.0,Profile=Profile328",
+                        (framework) => new[]
+                        {
+                            Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType], framework),
+                            Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType], "portable-net4+sl5+netcore45+wpa81+wp8"),
+                        }
+                    }
+                };
+            #endregion
+
+            if (string.IsNullOrEmpty(TargetFramework))
+            {
+                throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
             }
 
-            if (validFullPath)
+            var parsedFramework = NuGet.Frameworks.NuGetFramework.ParseFolder(TargetFramework);
+            var parsedFrameworkName = parsedFramework?.GetDotNetFrameworkName(NuGet.Frameworks.DefaultFrameworkNameProvider.Instance) ?? throw new Exceptions.TargetFrameworkNotFoundException($"Unable to parse {TargetFramework} in {this}");
+            if (frameworkResolver.ContainsKey(parsedFrameworkName))
             {
-                AddLibraries(Directory.GetFiles(FullPath));
+                FullPath = frameworkResolver[parsedFrameworkName](TargetFramework).Where(x => Directory.Exists(x)).FirstOrDefault();
             }
             else
             {
-                throw new Exceptions.InvalidAssemblyPathException($"The installed package {this} has an invalid library path {FullPath}");
+                FullPath = Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType], TargetFramework);
             }
-        }
 
-        private Uri TryGetUri(string uriString)
-        {
-            var expandedString = System.Environment.ExpandEnvironmentVariables(uriString).Trim();
-            try
+            if (PackageType != NuGetPackageType.Other && (FullPath == null || !Directory.Exists(FullPath)))
             {
-                return new Uri(expandedString);
-            }
-            catch (UriFormatException)
-            {
-                throw new UriFormatException($"The specified URL of the package {this} is invalid, the expanded value is: {expandedString}");
-            }
-        }
-
-        private void SetDotNetLibInformation(string targetFramework, NuGetPackageType t)
-        {
-            PackageType = t;
-            TargetFramework = "";
-            var assemblyFolderDict = new Dictionary<NuGetPackageType, string>() {
-                { NuGetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
-                { NuGetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
-            };
-
-            if (!string.IsNullOrEmpty(targetFramework))
-            {
-                TargetFramework = System.Environment.ExpandEnvironmentVariables(targetFramework);
-            }
-            
-            var basePath = Path.Combine(RootPath, $"{Identity.Id}.{Identity.MinVersion}");
-
-            if (t == NuGetPackageType.DotNetImplementationAssembly || t == NuGetPackageType.DotNetCompileTimeAssembly)
-            {
-                if (string.IsNullOrEmpty(TargetFramework))
-                {
-                    throw new Exception($"The NuGet package {ToString()} is marked as .NET lib, but the TargetFramework is not specified.");
-                }
-                FullPath = Path.Combine(basePath, assemblyFolderDict[t], TargetFramework);
-            }
-            else
-            {
-                FullPath = basePath;
-                if (!string.IsNullOrEmpty(TargetFramework))
-                {
-                    FullPath = Path.Combine(FullPath, TargetFramework);
-                }
+                throw new Exceptions.InvalidAssemblyPathException($"Unable to find the FullPath ['{FullPath}'] of the .NET package {this}");
             }
         }
     }
