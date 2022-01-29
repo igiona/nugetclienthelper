@@ -88,13 +88,13 @@ namespace NuGetClientHelper.Test
         }
 
         /// <summary>
-        /// Test with isDotNetLib = NuGetPackageType.DotNetImplementationAssembly
+        /// Test with isDotNetLib = NuGetPackageType.DotNet
         /// </summary>
         [Test]
         public void EnsureEnvironmentVariable_DotNetImplementationAssembly()
         {
             var target = "netstandard2.0";
-            var p = new NuGetPackageInfo("Unity.Container", "5.11.10", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo("Unity.Container", "5.11.10", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath());
             var expectedFullPath = Path.Combine(GetNugetCachePath(), "Unity.Container.5.11.10", "lib", target);
             NuGetClientHelper.InstallPackages(new[] { p }, false, null, target);
             Assert.AreEqual(expectedFullPath, Environment.GetEnvironmentVariable("Unity_Container"), "Invalid path environment variable");
@@ -109,7 +109,7 @@ namespace NuGetClientHelper.Test
         public void EnsureEnvironmentVariable_DotNetCompileTimeAssembly()
         {
             var target = "netstandard1.0";
-            var p = new NuGetPackageInfo("Microsoft.CSharp", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetCompileTimeAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo("Microsoft.CSharp", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath());
             var expectedFullPath = Path.Combine(GetNugetCachePath(), "Microsoft.CSharp.4.0.1", "ref", target);
             NuGetClientHelper.InstallPackages(new[] { p }, false, null, target);
             Assert.AreEqual(expectedFullPath, Environment.GetEnvironmentVariable("Microsoft_CSharp"), "Invalid path environment variable");
@@ -120,7 +120,7 @@ namespace NuGetClientHelper.Test
         [TestCase("Unity.Container", "5.11.10", "netstandard2.0", "https://api.nuget.org/v3/index.json")]
         public void InstallPackage(string id, string version, string target, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNet, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, false, null, target);
             Assert.AreEqual(1, installed.Count(), "Invalid number of installed packages");
         }
@@ -131,7 +131,7 @@ namespace NuGetClientHelper.Test
         [TestCase("Microsoft.AspNet.WebApi.OwinSelfHost", "5.2.7", "net45", "https://api.nuget.org/v3/index.json")]
         public void InstallCollectorPackage(string id, string version, string target, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.Other, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.Custom, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, true, null, target);
             Assert.AreEqual(9, installed.Count(), "Invalid number of installed packages");
         }
@@ -142,7 +142,7 @@ namespace NuGetClientHelper.Test
         [TestCase("Ninject.Web.WebApi.OwinSelfHost", "3.3.1", "net45", "https://api.nuget.org/v3/index.json")]        
         public void InstallCollectorPackageAsDependency(string id, string version, string target, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNet, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, true, null, target);
         }
 
@@ -154,7 +154,7 @@ namespace NuGetClientHelper.Test
         [TestCase("IronPython.StdLib", "2.7.7", "OneToThree", "https://api.nuget.org/v3/index.json")]
         public void InstallNonDotNet(string id, string version, string content, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, null, NuGetPackageType.Other, GetNugetCachePath(), true, content);
+            var p = new NuGetPackageInfo(id, version, source, null, NuGetPackageType.Custom, GetNugetCachePath(), true, content);
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, false, null, NuGet.Frameworks.NuGetFramework.AnyFramework).First();
             Assert.AreEqual(Path.Combine(GetNugetCachePath(), $"{id}.{version}", content), installed.FullPath, "Invalid package FullPath");
         }
@@ -165,7 +165,7 @@ namespace NuGetClientHelper.Test
         [Test]
         public void EnsureEnvironmentVariable_NonDotNetPackage()
         {
-            var p = new NuGetPackageInfo("IronPython.StdLib", "2.7.7", "https://api.nuget.org/v3/index.json", null, NuGetPackageType.Other, GetNugetCachePath(), true, "content\\Lib");
+            var p = new NuGetPackageInfo("IronPython.StdLib", "2.7.7", "https://api.nuget.org/v3/index.json", null, NuGetPackageType.Custom, GetNugetCachePath(), true, "content\\Lib");
             var expectedFullPath = Path.Combine(GetNugetCachePath(), "IronPython.StdLib.2.7.7", "content", "Lib");
             NuGetClientHelper.InstallPackages(new[] { p }, false, null, NuGet.Frameworks.NuGetFramework.AnyFramework);
             Assert.AreEqual(expectedFullPath, Environment.GetEnvironmentVariable("IronPython_StdLib"), "Invalid path environment variable");
@@ -176,7 +176,7 @@ namespace NuGetClientHelper.Test
         [Test]
         public void CheckInvalidFramework()
         {
-            var p = new NuGetPackageInfo("Microsoft.Owin.Hosting", "2.0.2", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo("Microsoft.Owin.Hosting", "2.0.2", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath());
             var ex = Assert.Throws<Exceptions.PackageInstallationException>(() => NuGetClientHelper.InstallPackages(new[] { p }, false, null, "net5"));
             Assert.IsInstanceOf<Exceptions.TargetFrameworkNotFoundException>(ex.InnerException.InnerException);
         }
@@ -192,7 +192,7 @@ namespace NuGetClientHelper.Test
                {
                    installed = NuGetClientHelper.InstallPackages(
                        new[] {
-                        new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath())
+                        new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath())
                        }, false, null, framework).First();
                });
             return installed?.TargetFramework;
@@ -201,7 +201,7 @@ namespace NuGetClientHelper.Test
         [TestCase("Unity.Container", "5.11.10", "netstandard2.0", "https://api.nuget.org/v3/index.json")]
         public void InstallPackageRecursively(string id, string version, string target, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNet, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, true, null, target).ToList();
             Assert.AreEqual(4, installed.Count(),  "Invalid number of installed packages");
 
@@ -211,7 +211,7 @@ namespace NuGetClientHelper.Test
         [TestCase("Unity.Container", "5.11.10", "netstandard2.0", "https://api.nuget.org/v3/index.json", new[] { "{0}\\Unity.Container.dll", "{0}\\Unity.Container.pdb" })]
         public void CheckPackageContent(string id, string version, string target, string source, string[] content)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNet, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, false, null, target);
             Assert.AreEqual(installed.Count(), 1, "Invalid number of installed packages");
 
@@ -232,45 +232,45 @@ namespace NuGetClientHelper.Test
             var packages = new List<NuGetPackageInfo>();
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.2", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.2", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Should assert due to the duplicate packages dependency package
             Assert.Throws<Exceptions.MultiplePackagesFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Should assert due to the missing dependency package
             Assert.Throws<Exceptions.DependencyNotFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.2", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.2", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Should assert due to the different versions of the CoreLib checked as dependencies in the TestLib1 package
             Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, true, null, "netstandard2.0").ToList();
             //Should assert due to the different versions of the CoreLib package
             Assert.Throws<Exceptions.MultipleDependenciesFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Should assert due to the unsupported version of the CoreLib package
             Assert.Throws<Exceptions.InvalidDependencyFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CoreLib", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CoreLib", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Although the Lib2 is build against the CoreLib;0.0.2 this test should pass.
             //This because Lib2 was built with version dependency CoreLib>=0.0.2
@@ -280,8 +280,8 @@ namespace NuGetClientHelper.Test
             Assert.Throws<Exceptions.InvalidMinVersionDependencyFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed, true));
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath(), false));
-            packages.Add(new NuGetPackageInfo("CoreLib", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib2", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath(), false));
+            packages.Add(new NuGetPackageInfo("CoreLib", "1.0.0", GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard2.0").ToList();
             //Although the Lib2 is build against the CoreLib;0.0.2 this test should pass.
             //This because the package TestLib2 is instantiated with the parameter dependencyForceMinVersion set to false.
@@ -297,8 +297,8 @@ namespace NuGetClientHelper.Test
         public void VersionConsistencyCheckOnDependency()
         {
             var packages = new List<NuGetPackageInfo>();
-            packages.Add(new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("CommonServiceLocator", "1.3", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CommonServiceLocator", "1.3", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, "net45").ToList();
             NuGetClientHelper.CheckPackagesConsistency(installed);
         }
@@ -313,8 +313,8 @@ namespace NuGetClientHelper.Test
         public void VersionConsistencyCheckOnPackage()
         {
             var packages = new List<NuGetPackageInfo>();
-            packages.Add(new NuGetPackageInfo("CommonServiceLocator", "1.3", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("CommonServiceLocator", "1.3", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, "net45").ToList();
             NuGetClientHelper.CheckPackagesConsistency(installed, true);
         }
@@ -326,8 +326,8 @@ namespace NuGetClientHelper.Test
         public void VersionConsistencyCheckOnPackageOnDependency()
         {
             var packages = new List<NuGetPackageInfo>();
-            packages.Add(new NuGetPackageInfo("TestVersionConflict", "1.0.0",GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
-            packages.Add(new NuGetPackageInfo("System.Management.Automation.dll", "10.0.10586.0", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestVersionConflict", "1.0.0",GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("System.Management.Automation.dll", "10.0.10586.0", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, "net45").ToList();
             NuGetClientHelper.CheckPackagesConsistency(installed, true);
         }
@@ -339,7 +339,7 @@ namespace NuGetClientHelper.Test
         public void TestNearestFrameworkAny(string version, string targetFramework)
         {
             var packages = new List<NuGetPackageInfo>();
-            packages.Add(new NuGetPackageInfo("TestFrameworkAny", version, GetLocalTestRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestFrameworkAny", version, GetLocalTestRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, targetFramework).ToList();
             NuGetClientHelper.CheckPackagesConsistency(installed, true);
         }
@@ -347,7 +347,7 @@ namespace NuGetClientHelper.Test
         [TestCase("CommonServiceLocator", "1.3", "portable-net4+sl5+netcore45+wpa81+wp8", "https://api.nuget.org/v3/index.json")]
         public void TestSpeacialFramework(string id, string version, string target, string source)
         {
-            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo(id, version, source, NuGetPackageType.DotNet, GetNugetCachePath());
             Assert.DoesNotThrow(() => NuGetClientHelper.InstallPackages(new[] { p }, false, null, target));
         }
 
@@ -362,10 +362,10 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
 
-            packages.Add(new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, false, null, framework).ToList();
 
-            Assert.IsTrue(installed.First().PackageType == NuGetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(installed.First().PackageType == NuGetDotNetPackageType.DotNetImplementationAssembly);
         }
 
         /// <summary>
@@ -382,7 +382,7 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
 
-            packages.Add(new NuGetPackageInfo("System.Resources.Extensions", "5.0.0",  "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("System.Resources.Extensions", "5.0.0",  "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, "net461").ToList();
 
             Assert.IsTrue(installed.Any(x => x.Identity.Id == "System.Memory"));
@@ -390,8 +390,8 @@ namespace NuGetClientHelper.Test
             Assert.IsTrue(installed.Any(x => x.Identity.Id == "System.Numerics.Vectors"));
             Assert.IsTrue(installed.Any(x => x.Identity.Id == "System.Runtime.CompilerServices.Unsafe"));
 
-            Assert.IsTrue(installed.Where(x => x.Identity.Id == "System.Numerics.Vectors").First().PackageType == NuGetPackageType.DotNetImplementationAssembly);
-            Assert.IsTrue(installed.Where(x => x.Identity.Id == "System.Runtime.CompilerServices.Unsafe").First().PackageType == NuGetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(installed.Where(x => x.Identity.Id == "System.Numerics.Vectors").First().PackageType == NuGetDotNetPackageType.DotNetImplementationAssembly);
+            Assert.IsTrue(installed.Where(x => x.Identity.Id == "System.Runtime.CompilerServices.Unsafe").First().PackageType == NuGetDotNetPackageType.DotNetImplementationAssembly);
 
             NuGetClientHelper.CheckPackagesConsistency(installed);
         }
@@ -402,7 +402,7 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
 
-            packages.Add(new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo(id, version, "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, framework).ToList();
             NuGetClientHelper.CheckPackagesConsistency(installed);
         }
@@ -412,9 +412,10 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
 
-            packages.Add(new NuGetPackageInfo("Microsoft.CSharp", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetCompileTimeAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("Microsoft.CSharp", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, true, null, "netstandard1.0").ToList();
-            NuGetClientHelper.CheckPackagesConsistency(installed);
+            Assert.IsTrue(installed.Where(x => x.Identity.Id == "Microsoft.CSharp").First().PackageType == NuGetDotNetPackageType.DotNetCompileTimeAssembly);
+            Assert.DoesNotThrow(() => NuGetClientHelper.CheckPackagesConsistency(installed));
             packages.Clear();
         }
 
@@ -423,7 +424,7 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
 
-            packages.Add(new NuGetPackageInfo("Newtonsoft.Json", "9.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("Newtonsoft.Json", "9.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath()));
             var installed = NuGetClientHelper.InstallPackages(packages, false, null, "netstandard1.0").ToList();
             //Should fail because at least the dependency to Microsoft.CSharp is missing.
             Assert.Throws<Exceptions.DependencyNotFoundException>(() => NuGetClientHelper.CheckPackagesConsistency(installed));
@@ -436,7 +437,7 @@ namespace NuGetClientHelper.Test
         [Test]
         public void CheckPackageLibraryContent()
         {
-            var p = new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath());
+            var p = new NuGetPackageInfo("Unity", "4.0.1", "https://api.nuget.org/v3/index.json", NuGetPackageType.DotNet, GetNugetCachePath());
             var installed = NuGetClientHelper.InstallPackages(new[] { p }, false, null, "net45").First();
 
             Assert.AreEqual(6, installed.Libraries.Count());
@@ -448,7 +449,7 @@ namespace NuGetClientHelper.Test
             var packages = new List<NuGetPackageInfo>();
 
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestLibOnlyRepository(), NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath()));
+            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestLibOnlyRepository(), NuGetPackageType.DotNet, GetNugetCachePath()));
 
             //Should fail due to the missing dependency package in the repository
             var ex = Assert.Throws<Exceptions.PackageInstallationException>(() => NuGetClientHelper.InstallPackages(packages, true, null, "netstandard2.0"));
@@ -456,7 +457,7 @@ namespace NuGetClientHelper.Test
 
             //This should work without exceptions
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath(), true, null));
+            packages.Add(new NuGetPackageInfo("TestLib1", "1.0.0", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, NuGetPackageType.DotNet, GetNugetCachePath(), true, null));
             Assert.DoesNotThrow(() => NuGetClientHelper.InstallPackages(packages, true, null, "netstandard2.0").ToList());
         }
 
@@ -465,7 +466,7 @@ namespace NuGetClientHelper.Test
         {
             var packages = new List<NuGetPackageInfo>();
             packages.Clear();
-            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, NuGetPackageType.DotNetImplementationAssembly, GetNugetCachePath(), true, null));
+            packages.Add(new NuGetPackageInfo("CoreLib", "0.0.1", GetLocalTestLibOnlyRepository(), new[] { GetLocalTestRepository() }, NuGetPackageType.DotNet, GetNugetCachePath(), true, null));
             try
             {
                 //Should fail because CoreLib is found in one of the dependency repositories, not in the source one.

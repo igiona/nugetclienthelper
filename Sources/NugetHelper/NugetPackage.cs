@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NuGet.Packaging.Core;
 
 namespace NuGetClientHelper
 {
@@ -13,22 +14,22 @@ namespace NuGetClientHelper
 
         public const string DotNetImplementationAssemblyPath = "lib";
 
-        private readonly Dictionary<NuGetPackageType, string> AssemblyFolderDictionary = new Dictionary<NuGetPackageType, string>() {
-            { NuGetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
-            { NuGetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
+        private readonly Dictionary<NuGetDotNetPackageType, string> AssemblyFolderDictionary = new Dictionary<NuGetDotNetPackageType, string>() {
+            { NuGetDotNetPackageType.DotNetCompileTimeAssembly, DotNetCompileTimeAssemblyPath},
+            { NuGetDotNetPackageType.DotNetImplementationAssembly, DotNetImplementationAssemblyPath }
         };
         private readonly int _hashCode;
         private readonly NuGetPackageInfo _info;
 
-        public NuGetPackage(NuGetPackageInfo info, string targetFramework)
+        public NuGetPackage(NuGetPackageInfo info, NuGetDotNetPackageType packageType, string targetFramework)
         {
             Dependencies = new List<NuGetDependency>();
             Libraries = new List<string>();
             _info = info;
-
+            PackageType = packageType;
             TargetFramework = string.IsNullOrEmpty(targetFramework) ? "" : System.Environment.ExpandEnvironmentVariables(targetFramework);
 
-            if (PackageType != NuGetPackageType.Other)
+            if (PackageType != NuGetDotNetPackageType.NonStandardDotNetPackage)
             {
                 SetDotNetLibInformation(targetFramework);
             }
@@ -54,7 +55,7 @@ namespace NuGetClientHelper
             {
                 AddLibraries(Directory.GetFiles(FullPath));
             }
-            else if (PackageType != NuGetPackageType.Other)
+            else if (PackageType != NuGetDotNetPackageType.NonStandardDotNetPackage)
             {
                 throw new Exceptions.InvalidAssemblyPathException($"Unable to load libraries. The library path of {this} doesn't exists ['{FullPath}']");
             }
@@ -99,8 +100,8 @@ namespace NuGetClientHelper
         /// </summary>
         public string FullPath { get; private set; }
 
-        public NuGetPackageType PackageType => _info.PackageType;
-        
+        public NuGetDotNetPackageType PackageType { get; private set; }
+
         public List<NuGetDependency> Dependencies { get; private set; }
 
         public List<string> Libraries { get; private set; }
@@ -237,7 +238,7 @@ namespace NuGetClientHelper
                 FullPath = Path.Combine(PackageRootPath, AssemblyFolderDictionary[PackageType], TargetFramework);
             }
 
-            if (PackageType != NuGetPackageType.Other && (FullPath == null || !Directory.Exists(FullPath)))
+            if (PackageType != NuGetDotNetPackageType.NonStandardDotNetPackage && (FullPath == null || !Directory.Exists(FullPath)))
             {
                 throw new Exceptions.InvalidAssemblyPathException($"Unable to find the FullPath ['{FullPath}'] of the .NET package {this}");
             }
