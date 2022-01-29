@@ -6,9 +6,7 @@ namespace NuGetClientHelper
 {
     public enum NuGetPackageType
     {
-        DotNetImplementationAssembly,
-        DotNetCompileTimeAssembly,
-
-        Other
+        DotNet,
+        Custom
     }
 }

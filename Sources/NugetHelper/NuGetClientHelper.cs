@@ -325,6 +325,7 @@ namespace NuGetClientHelper
 
                 string targetFramework = null;
                 NuGetPackageInfo packageInfo;
+                var packageType = NuGetDotNetPackageType.NonStandardDotNetPackage;
 
                 if (requestedPackage.Identity.Id != packageToInstall.Id) //Was not the first requested id, must be a dependency.
                 {
@@ -343,18 +344,17 @@ namespace NuGetClientHelper
                             version = packageReader.NuspecReader.GetVersion();
                         }
                         catch (NuGet.Packaging.Core.PackagingException) { }
+                        packageType = nearest.Value.Type;
                         packageInfo = new NuGetPackageInfo(packageToInstall.Id, version.OriginalVersion, 
                                                             packageToInstall.Source.PackageSource.Source,
-                                                            nearest.Value.Type, 
+                                                            requestedPackage.PackageType, 
                                                             requestedPackage.RootPath, 
                                                             requestedPackage.DependenciesForceMinVersion);
                     }
                 }
                 else
                 {
-                    NuGetPackageType packageType = requestedPackage.PackageType;
-
-                    if (packageType != NuGetPackageType.Other)
+                    if (requestedPackage.PackageType == NuGetPackageType.DotNet)
                     {
                         var nearest = GetNearestFramework(packageReader, requestedFramework);
                         if(nearest == null)
@@ -368,16 +368,16 @@ namespace NuGetClientHelper
                     if (requestedPackage.Source.AbsoluteUri != packageToInstall.Source.PackageSource.Source)
                     {
                         //Possible Dependency Confusion attack
-                        throw new Exceptions.DependencyConfusionException($"The requested package has been found in {packageToInstall.Source.PackageSource.Source} instead of the required URI {requestedPackage.Source.AbsoluteUri}. Update the pakcage source if this is intended");
+                        throw new Exceptions.DependencyConfusionException($"The requested package has been found in {packageToInstall.Source.PackageSource.Source} instead of the required URI {requestedPackage.Source.AbsoluteUri}. Update the package source if this is intended");
                     }
                     packageInfo = new NuGetPackageInfo(requestedPackage.Identity.Id, requestedPackage.Identity.VersionRange.OriginalString,
-                                                       requestedPackage.Source.AbsoluteUri, requestedPackage.DependencySources?.Select(x => x.AbsoluteUri).ToArray(), 
-                                                       packageType, 
+                                                       requestedPackage.Source.AbsoluteUri, requestedPackage.DependencySources?.Select(x => x.AbsoluteUri).ToArray(),
+                                                       requestedPackage.PackageType, 
                                                        requestedPackage.RootPath, 
                                                        requestedPackage.DependenciesForceMinVersion, 
                                                        requestedPackage.CustomContentPath);
                 }
-                var newlyInstalled = new NuGetPackage(packageInfo, targetFramework);
+                var newlyInstalled = new NuGetPackage(packageInfo, packageType, targetFramework);
 
                 newlyInstalled.AddDependencies(packageToInstall.Dependencies);
                 installedPackages.Add(newlyInstalled);
@@ -385,13 +385,13 @@ namespace NuGetClientHelper
         }
 
         [Obsolete]
-        private static bool CheckFrameworkMatch(PackageReaderBase packageReader, NuGetFramework targetFramework, ref NuGetPackageType type)
+        private static bool CheckFrameworkMatch(PackageReaderBase packageReader, NuGetFramework targetFramework, ref NuGetDotNetPackageType type)
         {
             var frameworkReducer = new FrameworkReducer();
-            Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            Dictionary<NuGetDotNetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetDotNetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NuGetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
-                { NuGetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
+                { NuGetDotNetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
+                { NuGetDotNetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             foreach (var get in getter)
@@ -408,13 +408,13 @@ namespace NuGetClientHelper
             return false;
         }
 
-        private static (NuGetPackageType Type, NuGetFramework Framework)? GetNearestFramework(PackageReaderBase packageReader, NuGetFramework targetFramework)
+        private static (NuGetDotNetPackageType Type, NuGetFramework Framework)? GetNearestFramework(PackageReaderBase packageReader, NuGetFramework targetFramework)
         {
             var frameworkReducer = new FrameworkReducer();
-            Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
+            Dictionary<NuGetDotNetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>> getter = new Dictionary<NuGetDotNetPackageType, Func<IEnumerable<FrameworkSpecificGroup>>>
             {
-                { NuGetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
-                { NuGetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
+                { NuGetDotNetPackageType.DotNetImplementationAssembly, () => packageReader.GetItems(NuGetPackage.DotNetImplementationAssemblyPath) },
+                { NuGetDotNetPackageType.DotNetCompileTimeAssembly, () => packageReader.GetItems(NuGetPackage.DotNetCompileTimeAssemblyPath) },
             };
 
             NuGetFramework nearest = null;
@@ -443,7 +443,7 @@ namespace NuGetClientHelper
             }
             if (!anyItemFound) //The package is empty, probably it's a "dependency collector", treat it as Any
             {
-                return (NuGetPackageType.DotNetImplementationAssembly, NuGetFramework.AnyFramework);
+                return (NuGetDotNetPackageType.DotNetImplementationAssembly, NuGetFramework.AnyFramework);
             }
             return null;
         }
