@@ -15,7 +15,7 @@
               Microsoft.TestPlatform.TestHost
                 which depends on NuGet.Frameworks
     -->
-    <PackageReference Include="NuGet.Frameworks" Version="5.8.1" />
+    <PackageReference Include="NuGet.Frameworks" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" /> 
   </ItemGroup>
 </Project>
