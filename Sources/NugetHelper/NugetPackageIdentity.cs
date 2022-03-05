@@ -56,7 +56,7 @@ namespace NuGetClientHelper
                 return false;
             }
 
-            return (Id == p.Id) && (MinVersion == p.MinVersion);
+            return Id.Equals(p.Id, StringComparison.OrdinalIgnoreCase) && MinVersion == p.MinVersion;
         }
 
         public static bool operator ==(NuGetPackageIdentity lhs, NuGetPackageIdentity rhs)
