@@ -492,7 +492,13 @@ namespace NuGetClientHelper
             {
                 repositories.Add(Repository.CreateSource(providers, new PackageSource(depSource.ToString())));
             }
-            repositories.AddRange(sourceRepositoryProvider.GetRepositories());
+
+            //Do not add all repositories from the source provider.
+            //Each package should be found in the provided "Source" or "DependencySource" properties.
+            //Alternatively, a different ISettings object could be used (instead of the default machine-wide one
+            //repositories.AddRange(sourceRepositoryProvider.GetRepositories());
+            //Add nuget.org V3 as default for backwards compatibility
+            repositories.Add(Repository.CreateSource(providers, new PackageSource("https://api.nuget.org/v3/index.json")));
 
             using (var cacheContext = new SourceCacheContext())
             {
@@ -538,7 +544,11 @@ namespace NuGetClientHelper
             ISet<SourcePackageDependencyInfo> availablePackages,
             List<NuGetPackage> installedPackages)
         {
-            if (availablePackages.Contains(package)) return;
+            if (availablePackages.Contains(package))
+            {
+                return;
+            }
+
             var packageFound = false;
             foreach (var sourceRepository in repositories)
             {
