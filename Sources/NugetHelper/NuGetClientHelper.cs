@@ -581,8 +581,13 @@ namespace NuGetClientHelper
                     resolveDependencyLevels--;
                     foreach (var dependency in dependencyInfo.Dependencies)
                     {
-                        var knownPackage = installedPackages.Where((x) => x.Identity.Id == dependency.Id).FirstOrDefault();
-                        if (knownPackage == null || !dependency.VersionRange.Satisfies(knownPackage.Identity.VersionRange.MinVersion))
+                        var knownPackageIdentification = 
+                            installedPackages.Where((x) => x.Identity.Id == dependency.Id)
+                                             .Select(x => x.Identity).FirstOrDefault()
+                            ?? availablePackages.Where((x) => x.Id == dependency.Id)
+                                                .Select(x => new NuGetPackageIdentity(x.Id, x.Version.ToString())).FirstOrDefault();
+
+                        if (knownPackageIdentification == null || !dependency.VersionRange.Satisfies(knownPackageIdentification.VersionRange.MinVersion))
                         {
                             await GetPackageDependencyInfo(resolveDependencyLevels,
                             new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion),
