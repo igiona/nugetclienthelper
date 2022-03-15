@@ -1,10 +1,7 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NuGet.Packaging.Core;
 
 namespace NuGetClientHelper
 {
@@ -46,10 +43,10 @@ namespace NuGetClientHelper
             EnvironmentVariableKeys.Add(GetVersionEnvironmentVariableKey(Identity.Id));
             EnvironmentVariableKeys.Add(GetFrameworkEnvironmentVariableKey(Identity.Id));
 
-            //Always set the "default" key value
-            Environment.SetEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Identity.Id), FullPath);
-            Environment.SetEnvironmentVariable(GetVersionEnvironmentVariableKey(Identity.Id), Identity.MinVersion);
-            Environment.SetEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Identity.Id), TargetFramework);
+            //Try to set the "default" key value, if not yet set
+            UpdateEnvironmentVariable(EscapeStringAsEnvironmentVariableAsKey(Identity.Id), FullPath);
+            UpdateEnvironmentVariable(GetVersionEnvironmentVariableKey(Identity.Id), Identity.MinVersion);
+            UpdateEnvironmentVariable(GetFrameworkEnvironmentVariableKey(Identity.Id), TargetFramework);
 
             if (Directory.Exists(FullPath))
             {
@@ -69,7 +66,7 @@ namespace NuGetClientHelper
             }
         }
 
-        public NuGetPackageIdentity Identity => _info.Identity;                
+        public NuGetPackageIdentity Identity => _info.Identity;
 
         public bool DependenciesForceMinVersion => _info.DependenciesForceMinVersion;
 
@@ -199,7 +196,7 @@ namespace NuGetClientHelper
 
         private void SetDotNetLibInformation(string targetFramework)
         {
-            #region Framwework spacial cases resolver
+            #region Framework spacial cases resolver
             var frameworkResolver = new Dictionary<string, Func<string, string[]>>()
                 {
                     {
@@ -241,6 +238,14 @@ namespace NuGetClientHelper
             if (PackageType != NuGetDotNetPackageType.NonStandardDotNetPackage && (FullPath == null || !Directory.Exists(FullPath)))
             {
                 throw new Exceptions.InvalidAssemblyPathException($"Unable to find the FullPath ['{FullPath}'] of the .NET package {this}");
+            }
+        }
+
+        private void UpdateEnvironmentVariable(string key, string value)
+        {
+            if (Environment.GetEnvironmentVariable(key) == null)
+            {
+                Environment.SetEnvironmentVariable(key, value);
             }
         }
     }
