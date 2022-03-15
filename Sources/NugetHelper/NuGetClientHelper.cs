@@ -52,7 +52,8 @@ namespace NuGetClientHelper
 
             public Task LogAsync(LogLevel level, string data)
             {
-                throw new NotImplementedException();
+                Log(level, data);
+                return Task.CompletedTask;
             }
 
             public void LogDebug(string data)
