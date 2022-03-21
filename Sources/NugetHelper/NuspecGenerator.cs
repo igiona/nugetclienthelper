@@ -44,19 +44,19 @@ namespace NuGetClientHelper
 
             /*
             This approach creates a lib/<framework> as necessary, depending on the target framework of each assembly.
-            An issue will arise when referencing such nuget package via SlnX, because as per today there only one
+            An issue will arise when referencing such NuGet package via SlnX, because as per today there only one
             targetFramework can be selected on each <package ... /> element.
             Another potential issue is caused by NuGet.exe (see https://docs.microsoft.com/en-us/nuget/reference/nuspec#dependencies-element).
             For each lib/<framework> there should be a 
                 <group targetFramework="<framework>"> in the <dependencies> element.
-            This code creates such a structure, but due to the nature of the Slnx nuget packages handling
-            it cannot know weather a file (DLL) in a specific framwork does reference one of the listed packages.
+            This code creates such a structure, but due to the nature of the Slnx NuGet packages handling
+            it cannot know weather a file (DLL) in a specific framework does reference one of the listed packages.
             It fact, it is well possible that this code would generate invalid dependencies.
             e.g.
                  <group targetFramework="net45"> ---> Caused by a project present in the SlnX (no reference to NUinit here)
                     <dependency id = "NUnit" version="3.13.1" /> ---> Caused by another project in the SlnX
                  <group>
-            For this reason, the code will now check for the "highest" compatible framwork, and create the package for that one only
+            For this reason, the code will now check for the "highest" compatible framework, and create the package for that one only
 
             var dependencies = new StringBuilder();
             foreach (var frameworkItems in spec.Files)
@@ -88,11 +88,11 @@ namespace NuGetClientHelper
             */
 
             var frameworkReducer = new FrameworkReducer();
-            if (spec.Elements.Count == 0)
+            if (spec.LibraryElements.Count == 0)
             {
                 throw new Exception($"For the required package {spec.Id} there are no file elements defined in the nuspec.");
             }
-            var highestFramework = frameworkReducer.ReduceUpwards(spec.Elements.Select(x => NuGetFramework.Parse(x.Key))).ToList();
+            var highestFramework = frameworkReducer.ReduceUpwards(spec.LibraryElements.Select(x => NuGetFramework.Parse(x.Key))).ToList();
 
             if (highestFramework.Count > 1)
             {
@@ -105,14 +105,14 @@ namespace NuGetClientHelper
 
             if (packageVersion == null)
             {
-                if (!spec.Elements.ContainsKey(highestFrameworkName))
+                if (!spec.LibraryElements.ContainsKey(highestFrameworkName))
                 {
                     throw new Exception($"The .NET version of the required package {spec.Id} has been resolved to {highestFrameworkName}. No file has been found under that framework.");
                 }
-                var assemblies = spec.Elements[highestFrameworkName].Where(x => File.Exists(x) && (x.ToLower().EndsWith(".dll") || x.ToLower().EndsWith(".exe")));
+                var assemblies = spec.LibraryElements[highestFrameworkName].Where(x => File.Exists(x) && (x.ToLower().EndsWith(".dll") || x.ToLower().EndsWith(".exe")));
                 if (assemblies.Count() == 0)
                 {
-                    throw new Exception("Error while loading the nuget information. No DLL found from which automatically retrieve the version information.");
+                    throw new Exception("Error while loading the NuGet information. No DLL found from which automatically retrieve the version information.");
                 }
 
                 var assemblyPath = assemblies.First();
@@ -127,7 +127,7 @@ namespace NuGetClientHelper
                 }
             }
 
-            foreach (var frameworkItems in spec.Elements)
+            foreach (var frameworkItems in spec.LibraryElements)
             {
                 var frameworkDir = Path.Combine(outDir, "lib", highestFrameworkName);
                 Directory.CreateDirectory(frameworkDir);
@@ -144,6 +144,26 @@ namespace NuGetClientHelper
                     }
                 }
             }
+
+            foreach (var genericElement in spec.GenericElements)
+            {
+                var destinationDir = Path.Combine(outDir, genericElement.Key);
+                Directory.CreateDirectory(destinationDir);
+
+                foreach (var f in genericElement.Value)
+                {
+                    FileAttributes attr = File.GetAttributes(f);
+                    if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                    {
+                        CopyDirectory(f, Path.Combine(destinationDir, Path.GetFileName(f)));
+                    }
+                    else
+                    {
+                        File.Copy(f, Path.Combine(destinationDir, Path.GetFileName(f)), true);
+                    }
+                }
+            }
+
             var dependencies = new StringBuilder();
 
             if (string.IsNullOrEmpty(highestFrameworkName))
@@ -165,9 +185,9 @@ namespace NuGetClientHelper
 
         
             string customElements = null;
-            if (spec.AdditionalElements != null)
+            if (spec.AdditionalMetadataElements != null)
             {
-                var lines = spec.AdditionalElements.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                var lines = spec.AdditionalMetadataElements.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 customElements = string.Join($"{Environment.NewLine}    ", lines);
             }
             var content = string.Format(_nuspecTemplate, spec.Id, packageVersion, customElements, dependencies);
