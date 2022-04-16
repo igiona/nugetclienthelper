@@ -357,3 +357,6 @@ MigrationBackup/
 .ionide/
 
 *.sln
+nuget.config
+slnx.config
+dump.txt
