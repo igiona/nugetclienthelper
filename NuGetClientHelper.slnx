@@ -15,19 +15,29 @@
     </nuget>   
     <env name="NUGET_ORG_URL">https://api.nuget.org/v3/index.json</env>
     
-    <package id="Newtonsoft.Json" version="13.0.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
+    <package id="Newtonsoft.Json" version="13.0.1" source="%NUGET_ORG_URL%" />
     
-    <package id="NuGet.Frameworks" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Common" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Configuration" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Frameworks" version="5.8.1" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Common" version="5.8.1" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Configuration" version="5.8.1" source="%NUGET_ORG_URL%" />
     <!-- NuGet.Packaging references Newtonsoft.Json v9.0.1, for this reason  dependenciesForceMinVersion is set to false for these packages -->
-    <package id="NuGet.Packaging" version="5.8.1" dependenciesForceMinVersion="false" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Packaging.Core" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Protocol" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Resolver" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
-    <package id="NuGet.Versioning" version="5.8.1" targetFramework="netstandard2.0" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Packaging" version="5.8.1" dependenciesForceMinVersion="false" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Packaging.Core" version="5.8.1" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Protocol" version="5.8.1" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Resolver" version="5.8.1" source="%NUGET_ORG_URL%" />
+    <package id="NuGet.Versioning" version="5.8.1" source="%NUGET_ORG_URL%" />
 
     <!-- Projects -->    
-    <project name="NuGetClientHelper" />
-    <project name="NuGetClientHelper.Test" packable="false" />
+    <project name="NuGetClientHelper">
+        <ref>Newtonsoft.Json</ref>
+        <ref>NuGet.Common</ref>
+        <ref>NuGet.Configuration</ref>
+        <ref>NuGet.Frameworks</ref>
+        <ref>NuGet.Packaging</ref>
+        <ref>NuGet.Packaging.Core</ref>
+        <ref>NuGet.Protocol</ref>
+        <ref>NuGet.Resolver</ref>
+        <ref>NuGet.Versioning</ref>
+    </project>
+    <project name="NuGetClientHelper.Test" />
 </SlnX>
