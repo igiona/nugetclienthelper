@@ -201,7 +201,7 @@ namespace NuGetClientHelper
             {
                 if (p == default(NuGetPackageInfo))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(p), "the package-info is not initialized. Can't install that package.");
+                    throw new ArgumentOutOfRangeException(nameof(p), "The package-info is not initialized. Can't install that package.");
                 }
                 //Always go through the installation method, to gather the dependency information
                 InstallPackage(p, requestedFramework, autoInstallDependencis, installed);
