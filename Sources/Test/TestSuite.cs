@@ -125,6 +125,16 @@ namespace NuGetClientHelper.Test
             Assert.AreEqual(1, installed.Count(), "Invalid number of installed packages");
         }
 
+        [Test]
+        public void InstallPackage_Fail()
+        {
+            var p = default(NuGetPackageInfo);
+            Assert.That(
+                () => NuGetClientHelper.InstallPackages(new[] { p }, false, null, "net48"),
+                Throws.TypeOf<ArgumentOutOfRangeException>()
+            );
+        }
+
         /// <summary>
         /// A .NET package without code, used only to reference other dependencies
         /// </summary>
